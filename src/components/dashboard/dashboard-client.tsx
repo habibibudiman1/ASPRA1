@@ -7,7 +7,6 @@
 
 import { TrendingUp, Ticket, Clock, CheckCircle, BarChart3, AlertCircle, ArrowUpRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { TicketStatusBadge } from '@/components/tickets/ticket-status-badge'
 import { TicketPriorityBadge } from '@/components/tickets/ticket-priority-badge'
 import { formatRelativeTime, cn } from '@/lib/utils'
@@ -17,6 +16,17 @@ import {
 } from 'recharts'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
+type RecentTicket = {
+  id: string
+  ticket_number: string
+  title: string
+  status: TicketStatus
+  priority: TicketPriority
+  created_at: string
+  reporter: { full_name: string } | null
+  assignee: { full_name: string } | null
+}
+
 interface DashboardClientProps {
   stats: {
     total: number
@@ -25,7 +35,7 @@ interface DashboardClientProps {
     slaResponseCompliance: number
     slaResolutionCompliance: number
   }
-  recentTickets: any[]
+  recentTickets: RecentTicket[]
 }
 
 const STATUS_COLORS: Record<string, string> = {

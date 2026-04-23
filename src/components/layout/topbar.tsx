@@ -21,14 +21,31 @@ import type { Profile } from '@/lib/types'
 
 // Mapping path ke judul breadcrumb
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
+  '/dashboard': 'Dashboard IT',
   '/tickets': 'Tiket',
   '/tickets/new': 'Buat Tiket Baru',
   '/categories': 'Kategori',
   '/users': 'Pengguna',
   '/sla': 'SLA Management',
-  '/reports': 'Laporan',
+  '/reports': 'Laporan IT',
   '/settings': 'Pengaturan Profil',
+  // Ruangan
+  '/ruangan': 'Dashboard Ruangan',
+  '/ruangan/jadwal': 'Jadwal Ruangan',
+  '/ruangan/booking': 'Booking Ruangan',
+  '/ruangan/riwayat': 'Riwayat Booking',
+  '/ruangan/approval': 'Approval Booking',
+  '/ruangan/kelola': 'Kelola Ruangan',
+  // Inventaris
+  '/inventaris': 'Dashboard Inventaris',
+  '/inventaris/barang': 'Data Barang',
+  '/inventaris/barang/baru': 'Tambah Barang',
+  '/inventaris/peminjaman': 'Peminjaman Barang',
+  '/inventaris/peminjaman/baru': 'Ajukan Peminjaman',
+  '/inventaris/mutasi': 'Mutasi Barang',
+  '/inventaris/mutasi/baru': 'Tambah Mutasi',
+  '/inventaris/stock-opname': 'Stock Opname',
+  '/inventaris/laporan': 'Laporan Inventaris',
 }
 
 interface TopbarProps {
@@ -105,7 +122,7 @@ export function Topbar({ profile, onMobileMenuOpen }: TopbarProps) {
                 <p className="text-xs text-muted-foreground">{profile.email}</p>
                 <span className="inline-flex mt-1">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                    {profile.role === 'it_admin' ? 'IT Admin' : 'Staff'}
+                    {profile.role === 'it_admin' ? 'IT Admin' : profile.role === 'sarana' ? 'Sarana' : 'Staff'}
                   </span>
                 </span>
               </div>

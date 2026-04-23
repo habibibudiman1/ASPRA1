@@ -8,8 +8,6 @@
 import { useState } from 'react'
 import { Download, FileText, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TicketStatusBadge } from '@/components/tickets/ticket-status-badge'
@@ -18,7 +16,23 @@ import { formatDate, generateCSV, downloadCSV } from '@/lib/utils'
 import { TICKET_STATUS_LIST, TICKET_PRIORITY_LIST } from '@/lib/constants'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
-interface ReportsClientProps { tickets: any[] }
+type ReportTicket = {
+  id: string
+  ticket_number: string
+  title: string
+  status: TicketStatus
+  priority: TicketPriority
+  created_at: string
+  resolved_at: string | null
+  sla_response_met: boolean | null
+  sla_resolution_met: boolean | null
+  rating: number | null
+  reporter: { full_name: string; department: string | null } | null
+  assignee: { full_name: string } | null
+  category: { name: string } | null
+}
+
+interface ReportsClientProps { tickets: ReportTicket[] }
 
 export function ReportsClient({ tickets }: ReportsClientProps) {
   const [filterStatus, setFilterStatus] = useState<string>('all')

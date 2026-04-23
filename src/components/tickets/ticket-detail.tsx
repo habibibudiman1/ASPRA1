@@ -322,7 +322,7 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
                   ))}
                 </div>
                 {ticket.rating_comment && (
-                  <p className="text-xs text-muted-foreground mt-2 italic">"{ticket.rating_comment}"</p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">&quot;{ticket.rating_comment}&quot;</p>
                 )}
               </CardContent>
             </Card>

@@ -28,7 +28,7 @@ export async function getCurrentUser(): Promise<Profile | null> {
   return data ?? null
 }
 
-export async function getUsers(role?: 'staff' | 'it_admin'): Promise<Profile[]> {
+export async function getUsers(role?: 'staff' | 'it_admin' | 'sarana'): Promise<Profile[]> {
   const supabase = await createClient()
   let query = supabase.from('profiles').select('*').order('full_name', { ascending: true })
   if (role) query = query.eq('role', role)

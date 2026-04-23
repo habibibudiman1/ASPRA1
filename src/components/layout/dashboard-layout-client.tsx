@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
 import { MobileNav } from '@/components/layout/mobile-nav'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import type { Profile } from '@/lib/types'
 
 interface DashboardLayoutClientProps {
@@ -33,10 +33,13 @@ export function DashboardLayoutClient({ profile, children }: DashboardLayoutClie
       {/* Mobile Sidebar (Sheet) */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="p-0 w-60" aria-describedby={undefined}>
+          <SheetTitle className="sr-only">Menu Navigasi Mobile</SheetTitle>
           <Sidebar
             profile={profile}
             collapsed={false}
             onToggle={() => setMobileMenuOpen(false)}
+            mobile
+            onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>
       </Sheet>

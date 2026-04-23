@@ -2,12 +2,12 @@
 
 // =============================================================================
 // lib/actions/notification-actions.ts
-// Server Actions untuk notifikasi
+// Server Actions untuk notifikasi (mendukung tipe baru)
 // =============================================================================
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import type { ActionResult, Notification } from '@/lib/types'
+import type { ActionResult, Notification, NotifikasiTipe } from '@/lib/types'
 
 export async function getNotifications(limit = 20): Promise<Notification[]> {
   const supabase = await createClient()
@@ -21,7 +21,7 @@ export async function getNotifications(limit = 20): Promise<Notification[]> {
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  return data ?? []
+  return (data ?? []) as Notification[]
 }
 
 export async function getUnreadCount(): Promise<number> {
@@ -75,5 +75,38 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
+  }
+}
+
+// =============================================================================
+// Helper internal — dipanggil dari server actions lain
+// =============================================================================
+
+export async function sendNotification({
+  user_id,
+  judul,
+  pesan,
+  tipe = 'sistem',
+  reference_id,
+}: {
+  user_id: string
+  judul: string
+  pesan: string
+  tipe?: NotifikasiTipe
+  reference_id?: string
+}): Promise<void> {
+  try {
+    const supabase = await createClient()
+    await supabase.from('notifications').insert({
+      user_id,
+      title: judul,
+      message: pesan,
+      tipe,
+      reference_id: reference_id ?? null,
+      is_read: false,
+    })
+  } catch {
+    // Notifikasi gagal tidak harus hentikan proses utama
+    console.error('[sendNotification] Gagal kirim notifikasi')
   }
 }

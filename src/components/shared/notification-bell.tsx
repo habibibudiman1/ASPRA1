@@ -5,14 +5,13 @@
 // Bell notifikasi dengan realtime subscription dan dropdown list
 // =============================================================================
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { Bell, Check, CheckCheck } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '@/lib/actions/notification-actions'
@@ -24,10 +23,18 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  const loadNotifications = useCallback(async () => {
+    const [notifs, count] = await Promise.all([getNotifications(10), getUnreadCount()])
+    setNotifications(notifs)
+    setUnreadCount(count)
+  }, [])
+
   // Load awal
   useEffect(() => {
-    loadNotifications()
-  }, [])
+    startTransition(() => {
+      void loadNotifications()
+    })
+  }, [loadNotifications, startTransition])
 
   // Realtime subscription
   useEffect(() => {
@@ -35,18 +42,12 @@ export function NotificationBell() {
     const channel = supabase
       .channel('notifications-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
-        loadNotifications()
+        void loadNotifications()
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
-
-  async function loadNotifications() {
-    const [notifs, count] = await Promise.all([getNotifications(10), getUnreadCount()])
-    setNotifications(notifs)
-    setUnreadCount(count)
-  }
+  }, [loadNotifications])
 
   function handleMarkRead(notifId: string) {
     startTransition(async () => {
