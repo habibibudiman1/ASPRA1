@@ -99,13 +99,18 @@ export const USER_ROLES: Record<UserRole, { label: string; description: string; 
     color: '#3b82f6',
   },
   it_admin: {
-    label: 'IT Admin',
-    description: 'Administrator IT yang dapat mengelola semua tiket, ruangan, dan konfigurasi sistem',
+    label: 'IT',
+    description: 'Staff IT yang mengelola tiket, kategori, SLA, dan laporan IT',
     color: '#8b5cf6',
+  },
+  admin: {
+    label: 'Admin',
+    description: 'Administrator sistem yang dapat mengakses semua fitur kecuali approval peminjaman',
+    color: '#ef4444',
   },
   sarana: {
     label: 'Sarana',
-    description: 'Pengelola sarana dan inventaris yayasan, bisa approve peminjaman barang',
+    description: 'Pengelola sarana dan inventaris, bisa approve booking ruangan dan peminjaman barang',
     color: '#f97316',
   },
 }
@@ -317,40 +322,65 @@ export const STAFF_NAV_ITEMS = [
   },
 ]
 
-export const ADMIN_NAV_ITEMS = [
+// Nav untuk role IT (it_admin) — tiket saja
+export const IT_NAV_ITEMS = [
   {
     group: 'Overview',
     items: [
-      { href: '/dashboard', label: 'Dashboard IT',  icon: 'LayoutDashboard' },
+      { href: '/dashboard', label: 'Dashboard IT', icon: 'LayoutDashboard' },
     ],
   },
   {
     group: 'Tiket IT',
     items: [
-      { href: '/tickets',    label: 'Semua Tiket',  icon: 'Ticket' },
-      { href: '/categories', label: 'Kategori',     icon: 'Tag' },
-      { href: '/users',      label: 'Pengguna',     icon: 'Users' },
-      { href: '/sla',        label: 'SLA',          icon: 'Timer' },
-      { href: '/reports',    label: 'Laporan IT',   icon: 'BarChart3' },
+      { href: '/tickets',    label: 'Semua Tiket', icon: 'Ticket' },
+      { href: '/categories', label: 'Kategori',    icon: 'Tag' },
+      { href: '/sla',        label: 'SLA',         icon: 'Timer' },
+      { href: '/reports',    label: 'Laporan IT',  icon: 'BarChart3' },
+    ],
+  },
+  {
+    group: 'Akun',
+    items: [
+      { href: '/settings', label: 'Profil', icon: 'User' },
+    ],
+  },
+]
+
+// Nav untuk role Admin (admin) — semua kecuali approval
+export const ADMIN_NAV_ITEMS = [
+  {
+    group: 'Overview',
+    items: [
+      { href: '/dashboard', label: 'Dashboard IT', icon: 'LayoutDashboard' },
+    ],
+  },
+  {
+    group: 'Tiket IT',
+    items: [
+      { href: '/tickets',    label: 'Semua Tiket', icon: 'Ticket' },
+      { href: '/categories', label: 'Kategori',    icon: 'Tag' },
+      { href: '/users',      label: 'Pengguna',    icon: 'Users' },
+      { href: '/sla',        label: 'SLA',         icon: 'Timer' },
+      { href: '/reports',    label: 'Laporan IT',  icon: 'BarChart3' },
     ],
   },
   {
     group: 'Ruangan',
     items: [
-      { href: '/ruangan',          label: 'Dashboard Ruangan', icon: 'Building2' },
-      { href: '/ruangan/jadwal',   label: 'Jadwal Ruangan',    icon: 'CalendarDays' },
-      { href: '/ruangan/approval', label: 'Approval Booking',  icon: 'CheckSquare' },
-      { href: '/ruangan/riwayat',  label: 'Riwayat Booking',   icon: 'ClipboardList' },
-      { href: '/ruangan/kelola',   label: 'Kelola Ruangan',    icon: 'Settings' },
+      { href: '/ruangan',         label: 'Dashboard Ruangan', icon: 'Building2' },
+      { href: '/ruangan/jadwal',  label: 'Jadwal Ruangan',    icon: 'CalendarDays' },
+      { href: '/ruangan/riwayat', label: 'Riwayat Booking',   icon: 'ClipboardList' },
+      { href: '/ruangan/kelola',  label: 'Kelola Ruangan',    icon: 'Settings' },
     ],
   },
   {
     group: 'Inventaris',
     items: [
-      { href: '/inventaris',              label: 'Dashboard Inventaris', icon: 'LayoutGrid' },
-      { href: '/inventaris/barang',       label: 'Data Barang',          icon: 'Package' },
-      { href: '/inventaris/peminjaman',   label: 'Peminjaman Barang',    icon: 'PackageCheck' },
-      { href: '/inventaris/laporan',      label: 'Laporan Inventaris',   icon: 'FileBarChart' },
+      { href: '/inventaris',            label: 'Dashboard Inventaris', icon: 'LayoutGrid' },
+      { href: '/inventaris/barang',     label: 'Data Barang',          icon: 'Package' },
+      { href: '/inventaris/peminjaman', label: 'Peminjaman Barang',    icon: 'PackageCheck' },
+      { href: '/inventaris/laporan',    label: 'Laporan Inventaris',   icon: 'FileBarChart' },
     ],
   },
   {
@@ -363,6 +393,13 @@ export const ADMIN_NAV_ITEMS = [
 
 export const SARANA_NAV_ITEMS = [
   {
+    group: 'Approval',
+    items: [
+      { href: '/ruangan/approval',      label: 'Approval Ruangan',    icon: 'CheckSquare' },
+      { href: '/inventaris/peminjaman', label: 'Approval Peminjaman', icon: 'PackageCheck' },
+    ],
+  },
+  {
     group: 'Ruangan',
     items: [
       { href: '/ruangan',         label: 'Dashboard Ruangan', icon: 'Building2' },
@@ -374,12 +411,11 @@ export const SARANA_NAV_ITEMS = [
   {
     group: 'Inventaris',
     items: [
-      { href: '/inventaris',                label: 'Dashboard Inventaris', icon: 'LayoutGrid' },
-      { href: '/inventaris/barang',         label: 'Data Barang',          icon: 'Package' },
-      { href: '/inventaris/peminjaman',     label: 'Peminjaman Barang',    icon: 'PackageCheck' },
-      { href: '/inventaris/mutasi',         label: 'Mutasi Barang',        icon: 'ArrowLeftRight' },
-      { href: '/inventaris/stock-opname',   label: 'Stock Opname',         icon: 'ClipboardCheck' },
-      { href: '/inventaris/laporan',        label: 'Laporan',              icon: 'FileBarChart' },
+      { href: '/inventaris',              label: 'Dashboard Inventaris', icon: 'LayoutGrid' },
+      { href: '/inventaris/barang',       label: 'Data Barang',          icon: 'Package' },
+      { href: '/inventaris/mutasi',       label: 'Mutasi Barang',        icon: 'ArrowLeftRight' },
+      { href: '/inventaris/stock-opname', label: 'Stock Opname',         icon: 'ClipboardCheck' },
+      { href: '/inventaris/laporan',      label: 'Laporan',              icon: 'FileBarChart' },
     ],
   },
   {

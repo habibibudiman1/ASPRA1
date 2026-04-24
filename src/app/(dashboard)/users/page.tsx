@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Pengguna' }
 
 export default async function UsersPage() {
   const profile = await getCurrentUser()
-  if (!profile || profile.role !== 'it_admin') redirect('/tickets')
+  if (!profile || profile.role !== 'admin') redirect('/tickets')
 
   const users = await getUsers()
   return <UsersClient users={users} currentUserId={profile.id} />

@@ -24,7 +24,7 @@ interface UsersClientProps { users: Profile[]; currentUserId: string }
 type CreateUserForm = {
   full_name: string
   email: string
-  role: 'staff' | 'it_admin' | 'sarana'
+  role: 'staff' | 'it_admin' | 'admin' | 'sarana'
   department: string
   password: string
 }
@@ -71,12 +71,12 @@ export function UsersClient({ users: initial, currentUserId }: UsersClientProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold">Manajemen Pengguna</h2>
           <p className="text-muted-foreground text-sm mt-1">{users.length} pengguna terdaftar</p>
         </div>
-        <Button id="btn-tambah-user" onClick={() => setShowCreate(true)}>
+        <Button id="btn-tambah-user" onClick={() => setShowCreate(true)} className="flex-shrink-0">
           <Plus className="mr-2 h-4 w-4" /> Tambah User
         </Button>
       </div>
@@ -105,21 +105,23 @@ export function UsersClient({ users: initial, currentUserId }: UsersClientProps)
                 <Badge
                   variant="outline"
                   className={`gap-1 text-xs ${
-                    user.role === 'it_admin'
-                      ? 'text-purple-600 border-purple-300'
-                      : user.role === 'sarana'
-                        ? 'text-orange-600 border-orange-300'
-                        : 'text-blue-600 border-blue-300'
+                    user.role === 'admin'
+                      ? 'text-red-600 border-red-300'
+                      : user.role === 'it_admin'
+                        ? 'text-purple-600 border-purple-300'
+                        : user.role === 'sarana'
+                          ? 'text-orange-600 border-orange-300'
+                          : 'text-blue-600 border-blue-300'
                   }`}
                 >
-                  {user.role === 'it_admin' ? (
+                  {user.role === 'admin' || user.role === 'it_admin' ? (
                     <Shield className="h-3 w-3" />
                   ) : user.role === 'sarana' ? (
                     <Building2 className="h-3 w-3" />
                   ) : (
                     <User className="h-3 w-3" />
                   )}
-                  {user.role === 'it_admin' ? 'IT Admin' : user.role === 'sarana' ? 'Sarana' : 'Staff'}
+                  {user.role === 'admin' ? 'Admin' : user.role === 'it_admin' ? 'IT' : user.role === 'sarana' ? 'Sarana' : 'Staff'}
                 </Badge>
                 {user.department && <Badge variant="outline" className="text-xs">{user.department}</Badge>}
                 <Badge variant="outline" className={user.is_active ? 'text-green-600 border-green-300 text-xs' : 'text-gray-500 border-gray-300 text-xs'}>
@@ -156,11 +158,12 @@ export function UsersClient({ users: initial, currentUserId }: UsersClientProps)
             ))}
             <div className="space-y-1.5">
               <Label>Role *</Label>
-              <Select value={form.role} onValueChange={(v: 'staff' | 'it_admin' | 'sarana') => setForm({ ...form, role: v })}>
+              <Select value={form.role} onValueChange={(v: 'staff' | 'it_admin' | 'admin' | 'sarana') => setForm({ ...form, role: v })}>
                 <SelectTrigger id="user-role"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="it_admin">IT Admin</SelectItem>
+                  <SelectItem value="it_admin">IT</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="sarana">Sarana</SelectItem>
                 </SelectContent>
               </Select>

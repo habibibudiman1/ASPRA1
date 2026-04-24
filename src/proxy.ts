@@ -1,25 +1,29 @@
 // =============================================================================
 // src/proxy.ts  (menggantikan middleware.ts — Next.js 16+)
 // Auth protection & role-based routing
-// Mendukung 3 role: staff, it_admin, sarana
+// Mendukung 4 role: staff, it_admin, admin, sarana
 // =============================================================================
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Route yang hanya bisa diakses IT Admin
+// Route yang hanya bisa diakses Admin (admin role)
 const ADMIN_ONLY_ROUTES = [
+  '/users',
+  '/ruangan/kelola',
+]
+
+// Route yang bisa diakses IT Admin dan Admin
+const IT_ADMIN_ROUTES = [
   '/dashboard',
   '/categories',
-  '/users',
   '/sla',
   '/reports',
-  '/ruangan/kelola',
-  '/ruangan/approval',
 ]
 
 // Route yang hanya bisa diakses Sarana
 const SARANA_ONLY_ROUTES = [
+  '/ruangan/approval',
   '/inventaris/barang/baru',
   '/inventaris/barang/edit',
   '/inventaris/mutasi/baru',
@@ -91,9 +95,15 @@ export async function proxy(request: NextRequest) {
 
   const role = profile?.role ?? 'staff'
 
-  // Check admin-only routes
+  // Check admin-only routes (admin role only)
   const isAdminRoute = ADMIN_ONLY_ROUTES.some(r => pathname.startsWith(r))
-  if (isAdminRoute && role !== 'it_admin') {
+  if (isAdminRoute && role !== 'admin') {
+    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+  }
+
+  // Check IT/Admin routes
+  const isITRoute = IT_ADMIN_ROUTES.some(r => pathname.startsWith(r))
+  if (isITRoute && role !== 'it_admin' && role !== 'admin') {
     return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
   }
 
@@ -116,8 +126,9 @@ export async function proxy(request: NextRequest) {
 /** Halaman default saat login, berdasarkan role */
 function getDefaultRoute(role?: string): string {
   switch (role) {
+    case 'admin':    return '/dashboard'
     case 'it_admin': return '/dashboard'
-    case 'sarana':   return '/ruangan'
+    case 'sarana':   return '/ruangan/approval'
     case 'staff':
     default:         return '/tickets'
   }

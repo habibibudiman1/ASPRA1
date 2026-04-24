@@ -88,7 +88,7 @@ export default async function DataBarangPage({ searchParams }: Props) {
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Stok</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kondisi</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Lokasi</th>
-                  {(isSarana || profile?.role === 'it_admin') && (
+                  {(isSarana || profile?.role === 'admin') && (
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nilai</th>
                   )}
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">Aksi</th>
@@ -123,7 +123,7 @@ export default async function DataBarangPage({ searchParams }: Props) {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{item.lokasi_penempatan}</td>
-                      {(isSarana || profile?.role === 'it_admin') && (
+                      {(isSarana || profile?.role === 'admin') && (
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {item.nilai_perolehan ? formatRupiah(item.nilai_perolehan) : '—'}
                         </td>

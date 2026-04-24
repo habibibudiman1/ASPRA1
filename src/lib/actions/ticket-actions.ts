@@ -200,11 +200,11 @@ export async function createTicket(formData: FormData): Promise<ActionResult<{ i
       new_value: ticket.ticket_number,
     })
 
-    // Kirim notifikasi ke semua IT Admin
+    // Kirim notifikasi ke semua IT Admin dan Admin
     const { data: admins } = await supabase
       .from('profiles')
       .select('id')
-      .eq('role', 'it_admin')
+      .in('role', ['it_admin', 'admin'])
       .eq('is_active', true)
 
     if (admins && admins.length > 0) {
@@ -349,8 +349,8 @@ export async function assignTicket(ticketId: string, assigneeId: string | null):
   try {
     const { user, profile, supabase } = await getCurrentUserAndRole()
 
-    if (profile.role !== 'it_admin') {
-      return { success: false, error: 'Hanya IT Admin yang bisa meng-assign tiket' }
+    if (profile.role !== 'it_admin' && profile.role !== 'admin') {
+      return { success: false, error: 'Hanya IT atau Admin yang bisa meng-assign tiket' }
     }
 
     const validation = assignTicketSchema.safeParse({ ticket_id: ticketId, assignee_id: assigneeId })

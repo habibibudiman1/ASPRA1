@@ -36,7 +36,7 @@ function BookingStatusBadge({ status }: { status: string }) {
 export default async function RiwayatBookingPage({ searchParams }: Props) {
   const params = await searchParams
   const profile = await getCurrentUser()
-  const isAdmin = profile?.role === 'it_admin'
+  const isAdmin = profile?.role === 'it_admin' || profile?.role === 'admin'
   const page = Number(params.page ?? 1)
 
   const { data: bookings, pagination } = await getBookings(

@@ -71,7 +71,9 @@ export default function LoginPage() {
       }
 
       toast.success('Login berhasil! Selamat datang.')
-      const redirectTo = profile?.role === 'it_admin' ? '/dashboard' : '/tickets'
+      let redirectTo = '/tickets'
+      if (profile?.role === 'admin' || profile?.role === 'it_admin') redirectTo = '/dashboard'
+      else if (profile?.role === 'sarana') redirectTo = '/ruangan/approval'
       router.push(redirectTo)
       router.refresh()
     })

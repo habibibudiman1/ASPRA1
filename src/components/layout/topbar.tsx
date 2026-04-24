@@ -122,7 +122,7 @@ export function Topbar({ profile, onMobileMenuOpen }: TopbarProps) {
                 <p className="text-xs text-muted-foreground">{profile.email}</p>
                 <span className="inline-flex mt-1">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                    {profile.role === 'it_admin' ? 'IT Admin' : profile.role === 'sarana' ? 'Sarana' : 'Staff'}
+                    {profile.role === 'admin' ? 'Admin' : profile.role === 'it_admin' ? 'IT' : profile.role === 'sarana' ? 'Sarana' : 'Staff'}
                   </span>
                 </span>
               </div>

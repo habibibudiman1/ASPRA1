@@ -22,11 +22,20 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [userId, setUserId] = useState<string | null>(null)
 
   const loadNotifications = useCallback(async () => {
     const [notifs, count] = await Promise.all([getNotifications(10), getUnreadCount()])
     setNotifications(notifs)
     setUnreadCount(count)
+  }, [])
+
+  // Ambil userId untuk filter realtime
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id)
+    })
   }, [])
 
   // Load awal
@@ -36,18 +45,24 @@ export function NotificationBell() {
     })
   }, [loadNotifications, startTransition])
 
-  // Realtime subscription
+  // Realtime subscription — difilter per user agar event INSERT diterima dengan benar
   useEffect(() => {
+    if (!userId) return
     const supabase = createClient()
     const channel = supabase
-      .channel('notifications-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
+      .channel(`notifications-realtime-${userId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, () => {
         void loadNotifications()
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [loadNotifications])
+  }, [userId, loadNotifications])
 
   function handleMarkRead(notifId: string) {
     startTransition(async () => {

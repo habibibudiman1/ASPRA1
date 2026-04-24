@@ -105,7 +105,7 @@ export async function deleteComment(commentId: string, ticketId: string): Promis
       .single()
 
     if (!comment) return { success: false, error: 'Komentar tidak ditemukan' }
-    if (comment.author_id !== user.id && profile?.role !== 'it_admin') {
+    if (comment.author_id !== user.id && !['it_admin', 'admin'].includes(profile?.role ?? '')) {
       return { success: false, error: 'Akses ditolak' }
     }
 

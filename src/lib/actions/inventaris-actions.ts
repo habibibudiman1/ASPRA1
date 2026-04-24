@@ -18,7 +18,7 @@ async function requireSaranaOrAdmin() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!['sarana', 'it_admin'].includes(profile?.role ?? '')) {
+  if (!['sarana', 'admin'].includes(profile?.role ?? '')) {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }
   return { supabase, user, role: profile!.role }

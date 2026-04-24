@@ -15,7 +15,7 @@ async function requireAdmin() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'it_admin') throw new Error('Hanya IT Admin yang bisa melakukan aksi ini')
+  if (!['it_admin', 'admin'].includes(profile?.role ?? '')) throw new Error('Hanya IT atau Admin yang bisa melakukan aksi ini')
   return { supabase, user }
 }
 
