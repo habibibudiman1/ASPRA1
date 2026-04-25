@@ -16,7 +16,7 @@ import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { PeminjamanBarangActions } from './actions-client'
 
-export const metadata: Metadata = { title: 'Peminjaman Barang | Assakinah IT' }
+export const metadata: Metadata = { title: 'Peminjaman Barang | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 interface Props {

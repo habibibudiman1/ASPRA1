@@ -17,7 +17,7 @@ import { INVENTARIS_KATEGORI, INVENTARIS_KONDISI } from '@/lib/constants'
 import { formatRupiah } from '@/lib/utils'
 import { DashboardInventarisCharts } from './charts-client'
 
-export const metadata: Metadata = { title: 'Dashboard Inventaris | Assakinah IT' }
+export const metadata: Metadata = { title: 'Dashboard Inventaris | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 function StatCard({ title, value, sub, icon: Icon, color, href }: {

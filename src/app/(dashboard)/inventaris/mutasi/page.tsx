@@ -14,7 +14,7 @@ import { JENIS_MUTASI } from '@/lib/constants'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
-export const metadata: Metadata = { title: 'Mutasi Barang | Assakinah IT' }
+export const metadata: Metadata = { title: 'Mutasi Barang | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 interface Props {

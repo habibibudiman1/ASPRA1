@@ -493,6 +493,6 @@ export const STORAGE_BUCKETS = {
 // APP METADATA
 // =============================================================================
 
-export const APP_NAME = 'Assakinah IT'
+export const APP_NAME = 'ASPRA'
 export const APP_DESCRIPTION = 'Sistem Terpadu IT & Sarana Yayasan Assakinah Sejahtera'
 export const APP_ORG = 'Yayasan Assakinah Sejahtera'

@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { CalendarPlus } from 'lucide-react'
 import type { PeminjamanRuanganWithRelations } from '@/lib/types'
 
-export const metadata: Metadata = { title: 'Riwayat Booking | Assakinah IT' }
+export const metadata: Metadata = { title: 'Riwayat Booking | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 interface Props {

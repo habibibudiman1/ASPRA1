@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { RUANGAN_STATUS } from '@/lib/constants'
 import { DeleteRuanganButton } from './delete-button'
 
-export const metadata: Metadata = { title: 'Kelola Ruangan | Assakinah IT' }
+export const metadata: Metadata = { title: 'Kelola Ruangan | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 interface Props {

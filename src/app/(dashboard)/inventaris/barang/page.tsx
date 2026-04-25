@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { INVENTARIS_KATEGORI, INVENTARIS_KONDISI } from '@/lib/constants'
 import { formatRupiah } from '@/lib/utils'
 
-export const metadata: Metadata = { title: 'Data Barang | Assakinah IT' }
+export const metadata: Metadata = { title: 'Data Barang | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 interface Props {

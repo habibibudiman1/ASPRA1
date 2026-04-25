@@ -45,7 +45,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Konten Tengah */}
         <div className="relative z-10">
           <h1 className="text-4xl font-bold mb-4 leading-tight">
-            Sistem Ticketing<br />IT Internal
+            Sistem Manajemen<br />ASPRA
           </h1>
           <p className="text-white/70 text-base leading-relaxed max-w-sm">
             Laporkan masalah IT Anda dengan mudah dan pantau perkembangan penanganannya secara realtime.

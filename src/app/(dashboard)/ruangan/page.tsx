@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
-export const metadata: Metadata = { title: 'Dashboard Ruangan | Assakinah IT' }
+export const metadata: Metadata = { title: 'Dashboard Ruangan | ASPRA' }
 
 export const dynamic = 'force-dynamic'
 
