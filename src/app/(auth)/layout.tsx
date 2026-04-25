@@ -54,7 +54,8 @@ export default function AuthLayout({
             ASPRA
           </h1>
           <p className="text-white/70 text-base leading-relaxed max-w-sm">
-            Platform terpadu untuk layanan IT Support, peminjaman ruangan, dan manajemen inventaris Yayasan Assakinah Sejahtera.
+            Platform terpadu untuk layanan IT Support, peminjaman ruangan, dan
+            manajemen inventaris Yayasan Assakinah Sejahtera.
           </p>
 
           {/* Feature list */}
