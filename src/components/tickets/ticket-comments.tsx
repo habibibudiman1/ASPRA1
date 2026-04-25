@@ -32,7 +32,7 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const isAdmin = currentProfile.role === 'it_admin'
+  const isAdmin = currentProfile.role === 'it_admin' || currentProfile.role === 'admin'
 
   // Realtime subscription
   useEffect(() => {

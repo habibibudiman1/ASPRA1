@@ -5,8 +5,10 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Plus, Pencil, Building2 } from 'lucide-react'
 import { getRuangan } from '@/lib/actions/ruangan-actions'
+import { getCurrentUser } from '@/lib/actions/user-actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,6 +23,9 @@ interface Props {
 }
 
 export default async function KelolaRuanganPage({ searchParams }: Props) {
+  const profile = await getCurrentUser()
+  if (!profile || profile.role !== 'admin') redirect('/ruangan')
+
   const params = await searchParams
   const page = Number(params.page ?? 1)
 
@@ -32,12 +37,12 @@ export default async function KelolaRuanganPage({ searchParams }: Props) {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Kelola Ruangan</h1>
           <p className="text-muted-foreground text-sm">{pagination.total} ruangan terdaftar</p>
         </div>
-        <Button asChild>
+        <Button asChild className="flex-shrink-0">
           <Link href="/ruangan/kelola/baru"><Plus className="h-4 w-4 mr-2" />Tambah Ruangan</Link>
         </Button>
       </div>

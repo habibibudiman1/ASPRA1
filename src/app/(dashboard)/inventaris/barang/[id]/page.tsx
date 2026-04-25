@@ -79,7 +79,7 @@ export default async function DetailBarangPage({ params }: Props) {
                 {item.jumlah_stok} {item.satuan}
               </span>
             </Row>
-            {(isSarana || profile?.role === 'it_admin') && (
+            {(isSarana || profile?.role === 'admin') && (
               <>
                 <Row label="Nilai Perolehan">{item.nilai_perolehan ? formatRupiah(item.nilai_perolehan) : '—'}</Row>
                 <Row label="Sumber Dana">{item.sumber_dana ?? '—'}</Row>

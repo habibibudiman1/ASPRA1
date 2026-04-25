@@ -81,7 +81,7 @@ export function SettingsClient({ profile }: SettingsClientProps) {
               <p className="font-bold text-lg">{profile.full_name}</p>
               <p className="text-sm text-muted-foreground">{profile.email}</p>
               <Badge variant="outline" className="mt-1 text-xs">
-                {profile.role === 'it_admin' ? '🛡️ IT Admin' : '👤 Staff'}
+                {profile.role === 'admin' ? '🛡️ Admin' : profile.role === 'it_admin' ? '💻 IT' : profile.role === 'sarana' ? '🏢 Sarana' : '👤 Staff'}
               </Badge>
             </div>
           </div>

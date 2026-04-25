@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { signOut } from '@/lib/actions/user-actions'
-import { APP_NAME, APP_ORG, STAFF_NAV_ITEMS, ADMIN_NAV_ITEMS, SARANA_NAV_ITEMS } from '@/lib/constants'
+import { APP_NAME, APP_ORG, STAFF_NAV_ITEMS, IT_NAV_ITEMS, ADMIN_NAV_ITEMS, SARANA_NAV_ITEMS } from '@/lib/constants'
 import { getInitials } from '@/lib/utils'
 import type { Profile } from '@/lib/types'
 
@@ -46,7 +46,8 @@ interface SidebarProps {
 
 function getRoleLabel(role: string): string {
   switch (role) {
-    case 'it_admin': return 'IT Admin'
+    case 'admin':    return 'Admin'
+    case 'it_admin': return 'IT'
     case 'sarana':   return 'Sarana'
     default:         return 'Staff'
   }
@@ -54,7 +55,8 @@ function getRoleLabel(role: string): string {
 
 function getNavItems(role: string): NavGroup[] {
   switch (role) {
-    case 'it_admin': return ADMIN_NAV_ITEMS
+    case 'admin':    return ADMIN_NAV_ITEMS
+    case 'it_admin': return IT_NAV_ITEMS
     case 'sarana':   return SARANA_NAV_ITEMS
     default:         return STAFF_NAV_ITEMS
   }

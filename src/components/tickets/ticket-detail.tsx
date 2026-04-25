@@ -44,7 +44,7 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
   const [rating, setRating] = useState(0)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
-  const isAdmin = currentProfile.role === 'it_admin'
+  const isAdmin = currentProfile.role === 'it_admin' || currentProfile.role === 'admin'
   const isReporter = ticket.reporter_id === currentProfile.id
   const canRate = isReporter && ticket.status === 'resolved' && !ticket.rating
   const canReopen = isReporter && (ticket.status === 'resolved' || ticket.status === 'closed')

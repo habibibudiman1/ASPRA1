@@ -41,8 +41,8 @@ export async function getBookings(
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  // Staff & Sarana hanya bisa lihat miliknya
-  if (role === 'staff' || role === 'sarana') {
+  // Staff, IT, dan Sarana hanya bisa lihat miliknya — Admin lihat semua
+  if (role !== 'admin') {
     query = query.eq('user_id', user.id)
   }
 
@@ -176,8 +176,8 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
 
     if (error) return { success: false, error: error.message }
 
-    // Notifikasi ke semua Admin
-    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'it_admin').eq('is_active', true)
+    // Notifikasi ke semua Sarana (mereka yang handle approval)
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'sarana').eq('is_active', true)
     await Promise.all(
       (admins ?? []).map(admin =>
         sendNotification({
@@ -205,7 +205,7 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
 export async function approveBooking(id: string, catatanAdmin?: string): Promise<ActionResult> {
   try {
     const { supabase, user, role } = await requireAuth()
-    if (role !== 'it_admin') return { success: false, error: 'Hanya Admin yang bisa menyetujui booking' }
+    if (role !== 'sarana') return { success: false, error: 'Hanya Sarana yang bisa menyetujui booking' }
 
     const { data: booking } = await supabase
       .from('peminjaman_ruangan').select('*, user:user_id(id, full_name), ruangan(nama_ruangan)').eq('id', id).single()
@@ -239,7 +239,7 @@ export async function approveBooking(id: string, catatanAdmin?: string): Promise
 export async function rejectBooking(id: string, catatanAdmin: string): Promise<ActionResult> {
   try {
     const { supabase, user, role } = await requireAuth()
-    if (role !== 'it_admin') return { success: false, error: 'Hanya Admin yang bisa menolak booking' }
+    if (role !== 'sarana') return { success: false, error: 'Hanya Sarana yang bisa menolak booking' }
     if (!catatanAdmin || catatanAdmin.trim().length < 5) {
       return { success: false, error: 'Catatan alasan penolakan wajib diisi (minimal 5 karakter)' }
     }
@@ -283,10 +283,10 @@ export async function cancelBooking(id: string, alasan?: string): Promise<Action
       .from('peminjaman_ruangan').select('user_id, status').eq('id', id).single()
     if (!booking) return { success: false, error: 'Booking tidak ditemukan' }
 
-    if (role !== 'it_admin' && booking.user_id !== user.id) {
+    if (role !== 'admin' && booking.user_id !== user.id) {
       return { success: false, error: 'Tidak diizinkan membatalkan booking ini' }
     }
-    if (role !== 'it_admin' && booking.status !== 'menunggu') {
+    if (role !== 'admin' && booking.status !== 'menunggu') {
       return { success: false, error: 'Hanya booking berstatus "menunggu" yang bisa dibatalkan. Hubungi Admin untuk booking yang sudah disetujui.' }
     }
 

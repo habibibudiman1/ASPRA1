@@ -7,7 +7,7 @@
 // DATABASE TYPES
 // =============================================================================
 
-export type UserRole = 'staff' | 'it_admin' | 'sarana'
+export type UserRole = 'staff' | 'it_admin' | 'admin' | 'sarana'
 
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed' | 'reopened'
 

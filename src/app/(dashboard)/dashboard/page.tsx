@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: 'Dashboard' }
 export default async function DashboardPage() {
   const profile = await getCurrentUser()
   if (!profile) redirect('/login')
-  if (profile.role !== 'it_admin') redirect('/tickets')
+  if (profile.role !== 'it_admin' && profile.role !== 'admin') redirect('/tickets')
 
   const supabase = await createClient()
 

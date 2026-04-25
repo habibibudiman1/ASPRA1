@@ -27,7 +27,7 @@ export default async function PeminjamanBarangPage({ searchParams }: Props) {
   const params = await searchParams
   const profile = await getCurrentUser()
   const isSarana = profile?.role === 'sarana'
-  const isAdmin = profile?.role === 'it_admin'
+  const isAdmin = profile?.role === 'it_admin' || profile?.role === 'admin'
   const page = Number(params.page ?? 1)
 
   const { data: peminjaman, pagination } = await getPeminjamanBarang(

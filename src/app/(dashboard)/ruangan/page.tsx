@@ -41,19 +41,19 @@ export default async function DashboardRuanganPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Dashboard Ruangan</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Status ruangan realtime — {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/ruangan/jadwal"><CalendarDays className="h-4 w-4 mr-2" />Lihat Jadwal</Link>
+        <div className="flex gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/ruangan/jadwal"><CalendarDays className="h-4 w-4 mr-1 sm:mr-2" /><span className="hidden sm:inline">Lihat </span>Jadwal</Link>
           </Button>
-          <Button asChild>
-            <Link href="/ruangan/booking">Booking Ruangan</Link>
+          <Button size="sm" asChild>
+            <Link href="/ruangan/booking"><span className="hidden sm:inline">Booking </span>Ruangan</Link>
           </Button>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default async function DashboardRuanganPage() {
           <Clock className="h-5 w-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-              {stats.booking_menunggu} booking menunggu persetujuan Admin
+              {stats.booking_menunggu} booking menunggu persetujuan Sarana
             </p>
           </div>
           <Button size="sm" variant="outline" asChild className="border-amber-300 text-amber-700 hover:bg-amber-100">

@@ -23,7 +23,7 @@ async function requireAuth() {
 
 async function requireAdmin() {
   const ctx = await requireAuth()
-  if (ctx.role !== 'it_admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
+  if (ctx.role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
   return ctx
 }
 

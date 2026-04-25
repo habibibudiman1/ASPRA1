@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Laporan' }
 
 export default async function ReportsPage() {
   const profile = await getCurrentUser()
-  if (!profile || profile.role !== 'it_admin') redirect('/tickets')
+  if (!profile || (profile.role !== 'it_admin' && profile.role !== 'admin')) redirect('/tickets')
 
   const supabase = await createClient()
 

@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: 'SLA Management' }
 
 export default async function SLAPage() {
   const profile = await getCurrentUser()
-  if (!profile || profile.role !== 'it_admin') redirect('/tickets')
+  if (!profile || (profile.role !== 'it_admin' && profile.role !== 'admin')) redirect('/tickets')
 
   const policies = await getSLAPolicies()
   return <SLAClient policies={policies} />

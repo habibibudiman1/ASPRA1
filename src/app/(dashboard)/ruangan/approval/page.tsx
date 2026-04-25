@@ -76,7 +76,7 @@ export default function ApprovalBookingPage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 md:p-6 space-y-5">
       <div>
         <h1 className="text-2xl font-bold">Approval Booking Ruangan</h1>
         <p className="text-muted-foreground text-sm">

@@ -25,7 +25,7 @@ export async function updateSLAPolicy(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'it_admin') return { success: false, error: 'Hanya IT Admin yang bisa mengubah SLA' }
+    if (!['it_admin', 'admin'].includes(profile?.role ?? '')) return { success: false, error: 'Hanya IT atau Admin yang bisa mengubah SLA' }
 
     if (responseTimeMinutes < 5 || resolutionTimeMinutes < 30) {
       return { success: false, error: 'Waktu respon minimal 5 menit, resolusi minimal 30 menit' }

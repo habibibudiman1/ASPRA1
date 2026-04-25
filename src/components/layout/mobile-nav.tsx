@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Ticket, User,
-  Building2, Package, PackageCheck, CalendarDays,
+  Building2, Package, PackageCheck, CalendarDays, CheckSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/lib/types'
@@ -21,20 +21,27 @@ interface MobileNavProps {
 export function MobileNav({ profile }: MobileNavProps) {
   const pathname = usePathname()
 
-  const items = profile.role === 'it_admin'
+  const items = profile.role === 'admin'
     ? [
         { href: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/tickets',    icon: Ticket,          label: 'Tiket' },
-        { href: '/ruangan',    icon: Building2,        label: 'Ruangan' },
-        { href: '/inventaris', icon: Package,          label: 'Inventaris' },
-        { href: '/settings',   icon: User,             label: 'Profil' },
+        { href: '/ruangan',    icon: Building2,       label: 'Ruangan' },
+        { href: '/inventaris', icon: Package,         label: 'Inventaris' },
+        { href: '/settings',   icon: User,            label: 'Profil' },
+      ]
+    : profile.role === 'it_admin'
+    ? [
+        { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { href: '/tickets',   icon: Ticket,          label: 'Tiket' },
+        { href: '/settings',  icon: User,            label: 'Profil' },
       ]
     : profile.role === 'sarana'
     ? [
-        { href: '/ruangan',                   icon: Building2,    label: 'Ruangan' },
-        { href: '/inventaris',                icon: Package,      label: 'Inventaris' },
-        { href: '/inventaris/peminjaman',     icon: PackageCheck, label: 'Peminjaman' },
-        { href: '/settings',                  icon: User,         label: 'Profil' },
+        { href: '/ruangan/approval',      icon: CheckSquare,  label: 'Approval' },
+        { href: '/ruangan',               icon: Building2,    label: 'Ruangan' },
+        { href: '/inventaris',            icon: Package,      label: 'Inventaris' },
+        { href: '/inventaris/peminjaman', icon: PackageCheck, label: 'Peminjaman' },
+        { href: '/settings',              icon: User,         label: 'Profil' },
       ]
     : [
         { href: '/tickets',               icon: Ticket,       label: 'Tiket' },

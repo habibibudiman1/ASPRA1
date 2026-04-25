@@ -42,18 +42,18 @@ export default async function TicketsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {profile?.role === 'it_admin' ? 'Semua Tiket' : 'Tiket Saya'}
+            {(profile?.role === 'it_admin' || profile?.role === 'admin') ? 'Semua Tiket' : 'Tiket Saya'}
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            {profile?.role === 'it_admin'
+            {(profile?.role === 'it_admin' || profile?.role === 'admin')
               ? 'Kelola semua tiket dari seluruh staff'
               : 'Pantau status tiket yang Anda buat'}
           </p>
         </div>
-        <Link href="/tickets/new" id="btn-buat-tiket" className={cn(buttonVariants({ variant: 'default' }), 'inline-flex items-center')}>
+        <Link href="/tickets/new" id="btn-buat-tiket" className={cn(buttonVariants({ variant: 'default' }), 'inline-flex items-center flex-shrink-0')}>
           <Plus className="mr-2 h-4 w-4" />
           Buat Tiket
         </Link>
