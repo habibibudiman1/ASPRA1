@@ -54,17 +54,16 @@ export default function AuthLayout({
             ASPRA
           </h1>
           <p className="text-white/70 text-base leading-relaxed max-w-sm">
-            Laporkan masalah IT Anda dengan mudah dan pantau perkembangan
-            penanganannya secara realtime.
+            Platform terpadu untuk layanan IT Support, peminjaman ruangan, dan manajemen inventaris Yayasan Assakinah Sejahtera.
           </p>
 
           {/* Feature list */}
           <div className="mt-8 space-y-3">
             {[
-              "Buat tiket kapan saja, di mana saja",
-              "Notifikasi realtime setiap update",
-              "Pantau SLA dan waktu resolusi",
-              "Riwayat & laporan lengkap",
+              "Layanan Ticketing IT Support",
+              "Sistem Peminjaman Ruangan",
+              "Manajemen & Peminjaman Inventaris",
+              "Notifikasi Realtime & Tracking",
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-3">
                 <div
