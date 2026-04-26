@@ -340,6 +340,20 @@ export const IT_NAV_ITEMS = [
     ],
   },
   {
+    group: 'Inventaris',
+    items: [
+      { href: '/inventory',        label: 'Semua Barang', icon: 'Package' },
+      { href: '/inventory/opname', label: 'Opname',       icon: 'ClipboardList' },
+    ],
+  },
+  {
+    group: 'Ruangan',
+    items: [
+      { href: '/rooms',         label: 'Daftar Ruangan',  icon: 'Building2' },
+      { href: '/rooms/booking', label: 'Booking Ruangan', icon: 'CalendarDays' },
+    ],
+  },
+  {
     group: 'Akun',
     items: [
       { href: '/settings', label: 'Profil', icon: 'User' },

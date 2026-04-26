@@ -608,3 +608,236 @@ export interface PaginatedResult<T> {
 }
 
 export type DatePeriod = '7d' | '30d' | '90d' | 'custom'
+
+// =============================================================================
+// INVENTORY & ROOM TYPES
+// =============================================================================
+
+export interface Room {
+  id: string
+  name: string
+  code: string
+  capacity: number | null
+  location: string | null
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ItemCategory {
+  id: string
+  name: string
+  description: string | null
+  is_electronic: boolean
+  created_at: string
+}
+
+export interface Item {
+  id: string
+  name: string
+  item_category_id: string | null
+  description: string | null
+  is_electronic: boolean
+  created_at: string
+  updated_at: string
+  // relasi
+  category?: ItemCategory | null
+}
+
+export type ItemCondition = 'baik' | 'rusak_ringan' | 'rusak_berat'
+export type ItemUnitStatus = 'aktif' | 'nonaktif' | 'rusak'
+
+export interface ItemUnit {
+  id: string
+  item_id: string
+  unit_code: string
+  serial_number: string | null
+  specs: Record<string, string> | null
+  condition: ItemCondition
+  status: ItemUnitStatus
+  room_id: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  // relasi
+  item?: Item
+  room?: Room | null
+}
+
+export interface RoomItem {
+  id: string
+  room_id: string
+  item_id: string
+  quantity: number
+  created_at: string
+  updated_at: string
+  // relasi
+  item?: Item
+  room?: Room
+}
+
+export interface RoomWithItems extends Room {
+  room_items?: RoomItem[]
+  item_units?: ItemUnit[]
+}
+
+export type BookingStatus = 'confirmed' | 'cancelled'
+
+export interface RoomBooking {
+  id: string
+  room_id: string
+  booked_by: string
+  title: string
+  description: string | null
+  start_time: string
+  end_time: string
+  status: BookingStatus
+  cancelled_by: string | null
+  cancelled_at: string | null
+  cancel_reason: string | null
+  created_at: string
+  updated_at: string
+  // relasi
+  room?: Room
+  booker?: Profile
+  canceller?: Profile | null
+}
+
+export type OpnameStatus = 'draft' | 'completed'
+
+export interface OpnameSession {
+  id: string
+  conducted_by: string
+  notes: string | null
+  status: OpnameStatus
+  created_at: string
+  completed_at: string | null
+  // relasi
+  conductor?: Profile
+  opname_items?: OpnameItem[]
+}
+
+export interface OpnameItem {
+  id: string
+  opname_session_id: string
+  item_id: string
+  room_id: string | null
+  expected_qty: number
+  actual_qty: number
+  notes: string | null
+  // relasi
+  item?: Item
+  room?: Room | null
+}
+
+export interface ItemMutation {
+  id: string
+  item_id: string
+  item_unit_id: string | null
+  from_room_id: string | null
+  to_room_id: string | null
+  quantity: number
+  moved_by: string
+  reason: string | null
+  created_at: string
+  // relasi
+  item?: Item
+  item_unit?: ItemUnit | null
+  from_room?: Room | null
+  to_room?: Room | null
+  mover?: Profile
+}
+
+// =============================================================================
+// INPUT TYPES (form → server actions)
+// =============================================================================
+
+export interface CreateRoomInput {
+  name: string
+  code: string
+  capacity?: number
+  location?: string
+  description?: string
+}
+
+export interface UpdateRoomInput extends Partial<CreateRoomInput> {
+  id: string
+  is_active?: boolean
+}
+
+export interface CreateItemInput {
+  name: string
+  item_category_id: string
+  description?: string
+  is_electronic: boolean
+}
+
+export interface UpdateItemInput extends Partial<CreateItemInput> {
+  id: string
+}
+
+export interface CreateItemUnitInput {
+  item_id: string
+  unit_code: string
+  serial_number?: string
+  specs?: Record<string, string>
+  condition?: ItemCondition
+  status?: ItemUnitStatus
+  room_id?: string
+  notes?: string
+}
+
+export interface UpdateItemUnitInput extends Partial<Omit<CreateItemUnitInput, 'item_id'>> {
+  id: string
+}
+
+export interface CreateRoomBookingInput {
+  room_id: string
+  title: string
+  description?: string
+  start_time: string
+  end_time: string
+}
+
+export interface CancelBookingInput {
+  id: string
+  cancel_reason?: string
+}
+
+export interface MutateItemInput {
+  item_id: string
+  from_room_id: string | null
+  to_room_id: string
+  quantity: number
+  item_unit_id?: string // untuk elektronik
+  reason?: string
+}
+
+export interface StartOpnameInput {
+  notes?: string
+  items: {
+    item_id: string
+    room_id: string | null
+    expected_qty: number
+  }[]
+}
+
+export interface UpdateOpnameItemInput {
+  id: string
+  actual_qty: number
+  notes?: string
+}
+
+// CSV import row
+export interface ImportItemRow {
+  nama_barang: string
+  kategori: string
+  ruangan?: string
+  jumlah?: number
+  kode_unit?: string
+  nomor_seri?: string
+  spesifikasi?: string
+  kondisi?: string
+  keterangan?: string
+}
