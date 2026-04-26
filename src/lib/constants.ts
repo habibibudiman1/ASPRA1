@@ -342,15 +342,15 @@ export const IT_NAV_ITEMS = [
   {
     group: 'Inventaris',
     items: [
-      { href: '/inventory',        label: 'Semua Barang', icon: 'Package' },
-      { href: '/inventory/opname', label: 'Opname',       icon: 'ClipboardList' },
+      { href: '/inventaris/barang',       label: 'Semua Barang', icon: 'Package' },
+      { href: '/inventaris/stock-opname', label: 'Opname',       icon: 'ClipboardList' },
     ],
   },
   {
     group: 'Ruangan',
     items: [
-      { href: '/rooms',         label: 'Daftar Ruangan',  icon: 'Building2' },
-      { href: '/rooms/booking', label: 'Booking Ruangan', icon: 'CalendarDays' },
+      { href: '/ruangan',         label: 'Daftar Ruangan',  icon: 'Building2' },
+      { href: '/ruangan/booking', label: 'Booking Ruangan', icon: 'CalendarDays' },
     ],
   },
   {

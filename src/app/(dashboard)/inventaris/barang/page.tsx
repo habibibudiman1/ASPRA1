@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { INVENTARIS_KATEGORI, INVENTARIS_KONDISI } from '@/lib/constants'
 import { formatRupiah } from '@/lib/utils'
+import { ImportBarang } from '@/components/inventaris/import-barang'
 
 export const metadata: Metadata = { title: 'Data Barang | ASPRA' }
 export const dynamic = 'force-dynamic'
@@ -41,7 +42,10 @@ export default async function DataBarangPage({ searchParams }: Props) {
           <p className="text-muted-foreground text-sm">{pagination.total} jenis barang terdaftar</p>
         </div>
         {isSarana && (
-          <Button asChild><Link href="/inventaris/barang/baru"><Plus className="h-4 w-4 mr-2" />Tambah Barang</Link></Button>
+          <div className="flex gap-2">
+            <ImportBarang />
+            <Button asChild><Link href="/inventaris/barang/baru"><Plus className="h-4 w-4 mr-2" />Tambah Barang</Link></Button>
+          </div>
         )}
       </div>
 

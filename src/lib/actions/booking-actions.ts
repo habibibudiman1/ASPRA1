@@ -286,7 +286,7 @@ export async function cancelBooking(id: string, alasan?: string): Promise<Action
     if (role !== 'admin' && booking.user_id !== user.id) {
       return { success: false, error: 'Tidak diizinkan membatalkan booking ini' }
     }
-    if (role !== 'admin' && booking.status !== 'menunggu') {
+    if (!['admin', 'sarana'].includes(role) && booking.status !== 'menunggu') {
       return { success: false, error: 'Hanya booking berstatus "menunggu" yang bisa dibatalkan. Hubungi Admin untuk booking yang sudah disetujui.' }
     }
 

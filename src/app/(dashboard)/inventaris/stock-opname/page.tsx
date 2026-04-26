@@ -32,10 +32,25 @@ export default function StockOpnamePage() {
   }
 
   const handleUpdate = (idx: number, field: 'jumlah_fisik' | 'keterangan', value: string | number) => {
-    setOpnameItems(prev => { const n = [...prev]; n[idx] = { ...n[idx], [field]: value }; return n })
+    setOpnameItems(prev => {
+      const next = [...prev]
+      if (field === 'jumlah_fisik') {
+        const n = Number(value)
+        next[idx] = { ...next[idx], jumlah_fisik: Number.isNaN(n) ? 0 : Math.max(0, Math.floor(n)) }
+      } else {
+        next[idx] = { ...next[idx], [field]: value as string }
+      }
+      return next
+    })
   }
 
   const handleSubmit = () => {
+    for (const item of opnameItems) {
+      if (!Number.isInteger(item.jumlah_fisik) || item.jumlah_fisik < 0) {
+        toast.error('Jumlah fisik harus berupa angka bulat non-negatif')
+        return
+      }
+    }
     const sesiId = `SO-${Date.now()}`
     startTransition(async () => {
       const result = await submitStockOpname(sesiId, tanggal, opnameItems.map(i => ({

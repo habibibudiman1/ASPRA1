@@ -13,6 +13,7 @@ import {
   Building2, CalendarDays, CalendarPlus, ClipboardList,
   CheckSquare, Settings, LayoutGrid, Package, PackageCheck,
   ShoppingCart, ArrowLeftRight, ClipboardCheck, FileBarChart,
+  ArrowDownCircle, ArrowUpCircle, AlertTriangle, PackageX, Trash2, Wrench,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -29,6 +30,7 @@ const ICON_MAP = {
   Building2, CalendarDays, CalendarPlus, ClipboardList,
   CheckSquare, Settings, LayoutGrid, Package, PackageCheck,
   ShoppingCart, ArrowLeftRight, ClipboardCheck, FileBarChart,
+  ArrowDownCircle, ArrowUpCircle, AlertTriangle, PackageX, Trash2, Wrench,
 }
 
 interface NavGroup {
