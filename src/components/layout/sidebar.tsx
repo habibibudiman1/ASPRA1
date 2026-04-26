@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Ticket, Tag, Users, Timer, BarChart3,
   User, Plus, ChevronLeft, ChevronRight, LogOut,
+  Package, Building2, Calendar, ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -23,18 +24,25 @@ import type { Profile } from '@/lib/types'
 
 const ICON_MAP = {
   LayoutDashboard, Ticket, Tag, Users, Timer, BarChart3, User, Plus,
+  Package, Building2, Calendar, ClipboardList,
 }
 
 const STAFF_NAV = [
   { href: '/tickets', label: 'Tiket Saya', icon: 'Ticket' },
   { href: '/tickets/new', label: 'Buat Tiket', icon: 'Plus' },
+  { href: '/rooms', label: 'Ruangan', icon: 'Building2' },
+  { href: '/rooms/booking', label: 'Booking Ruangan', icon: 'Calendar' },
   { href: '/settings', label: 'Profil', icon: 'User' },
 ]
 
 const ADMIN_NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
   { href: '/tickets', label: 'Semua Tiket', icon: 'Ticket' },
-  { href: '/categories', label: 'Kategori', icon: 'Tag' },
+  { href: '/inventory', label: 'Inventaris', icon: 'Package' },
+  { href: '/inventory/opname', label: 'Opname', icon: 'ClipboardList' },
+  { href: '/rooms', label: 'Ruangan', icon: 'Building2' },
+  { href: '/rooms/booking', label: 'Booking Ruangan', icon: 'Calendar' },
+  { href: '/categories', label: 'Kategori Tiket', icon: 'Tag' },
   { href: '/users', label: 'Pengguna', icon: 'Users' },
   { href: '/sla', label: 'SLA', icon: 'Timer' },
   { href: '/reports', label: 'Laporan', icon: 'BarChart3' },
