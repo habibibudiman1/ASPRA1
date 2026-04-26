@@ -44,7 +44,7 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
   const [rating, setRating] = useState(0)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
-  const isAdmin = currentProfile.role === 'it_admin'
+  const isAdmin = currentProfile.role === 'it_admin' || currentProfile.role === 'admin'
   const isReporter = ticket.reporter_id === currentProfile.id
   const canRate = isReporter && ticket.status === 'resolved' && !ticket.rating
   const canReopen = isReporter && (ticket.status === 'resolved' || ticket.status === 'closed')
@@ -322,7 +322,7 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
                   ))}
                 </div>
                 {ticket.rating_comment && (
-                  <p className="text-xs text-muted-foreground mt-2 italic">"{ticket.rating_comment}"</p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">&quot;{ticket.rating_comment}&quot;</p>
                 )}
               </CardContent>
             </Card>

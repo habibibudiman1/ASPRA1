@@ -2,7 +2,7 @@
 
 // =============================================================================
 // components/layout/sidebar.tsx
-// Sidebar navigasi kiri — collapsible di desktop
+// Sidebar navigasi kiri — collapsible, mendukung grouped nav & 3 role
 // =============================================================================
 
 import Link from 'next/link'
@@ -10,7 +10,9 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Ticket, Tag, Users, Timer, BarChart3,
   User, Plus, ChevronLeft, ChevronRight, LogOut,
-  Package, Building2, Calendar, ClipboardList,
+  Building2, CalendarDays, CalendarPlus, ClipboardList,
+  CheckSquare, Settings, LayoutGrid, Package, PackageCheck,
+  ShoppingCart, ArrowLeftRight, ClipboardCheck, FileBarChart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -18,59 +20,70 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { signOut } from '@/lib/actions/user-actions'
-import { APP_NAME, APP_ORG } from '@/lib/constants'
+import { APP_NAME, APP_ORG, STAFF_NAV_ITEMS, IT_NAV_ITEMS, ADMIN_NAV_ITEMS, SARANA_NAV_ITEMS } from '@/lib/constants'
 import { getInitials } from '@/lib/utils'
 import type { Profile } from '@/lib/types'
 
 const ICON_MAP = {
   LayoutDashboard, Ticket, Tag, Users, Timer, BarChart3, User, Plus,
-  Package, Building2, Calendar, ClipboardList,
+  Building2, CalendarDays, CalendarPlus, ClipboardList,
+  CheckSquare, Settings, LayoutGrid, Package, PackageCheck,
+  ShoppingCart, ArrowLeftRight, ClipboardCheck, FileBarChart,
 }
 
-const STAFF_NAV = [
-  { href: '/tickets', label: 'Tiket Saya', icon: 'Ticket' },
-  { href: '/tickets/new', label: 'Buat Tiket', icon: 'Plus' },
-  { href: '/rooms', label: 'Ruangan', icon: 'Building2' },
-  { href: '/rooms/booking', label: 'Booking Ruangan', icon: 'Calendar' },
-  { href: '/settings', label: 'Profil', icon: 'User' },
-]
-
-const ADMIN_NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-  { href: '/tickets', label: 'Semua Tiket', icon: 'Ticket' },
-  { href: '/inventory', label: 'Inventaris', icon: 'Package' },
-  { href: '/inventory/opname', label: 'Opname', icon: 'ClipboardList' },
-  { href: '/rooms', label: 'Ruangan', icon: 'Building2' },
-  { href: '/rooms/booking', label: 'Booking Ruangan', icon: 'Calendar' },
-  { href: '/categories', label: 'Kategori Tiket', icon: 'Tag' },
-  { href: '/users', label: 'Pengguna', icon: 'Users' },
-  { href: '/sla', label: 'SLA', icon: 'Timer' },
-  { href: '/reports', label: 'Laporan', icon: 'BarChart3' },
-  { href: '/settings', label: 'Profil', icon: 'User' },
-]
+interface NavGroup {
+  group: string
+  items: { href: string; label: string; icon: string }[]
+}
 
 interface SidebarProps {
   profile: Profile
   collapsed: boolean
   onToggle: () => void
+  mobile?: boolean
+  onNavigate?: () => void
 }
 
-export function Sidebar({ profile, collapsed, onToggle }: SidebarProps) {
+function getRoleLabel(role: string): string {
+  switch (role) {
+    case 'admin':    return 'Admin'
+    case 'it_admin': return 'IT'
+    case 'sarana':   return 'Sarana'
+    default:         return 'Staff'
+  }
+}
+
+function getNavItems(role: string): NavGroup[] {
+  switch (role) {
+    case 'admin':    return ADMIN_NAV_ITEMS
+    case 'it_admin': return IT_NAV_ITEMS
+    case 'sarana':   return SARANA_NAV_ITEMS
+    default:         return STAFF_NAV_ITEMS
+  }
+}
+
+export function Sidebar({ profile, collapsed, onToggle, mobile = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
-  const navItems = profile.role === 'it_admin' ? ADMIN_NAV : STAFF_NAV
+  const navGroups = getNavItems(profile.role)
+
+  const isActive = (href: string) => {
+    if (href === '/tickets/new') return pathname === href
+    if (href === '/inventaris/peminjaman/baru') return pathname === href
+    return pathname === href || (href !== '/' && pathname.startsWith(href + '/'))
+  }
 
   return (
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          'hidden md:flex flex-col h-full transition-all duration-300 ease-in-out',
-          collapsed ? 'w-16' : 'w-60'
+          mobile ? 'flex flex-col h-full' : 'hidden md:flex flex-col h-full transition-all duration-300 ease-in-out',
+          collapsed ? 'w-16' : 'w-64'
         )}
         style={{ background: 'hsl(var(--sidebar))', borderRight: '1px solid hsl(var(--sidebar-border))' }}
       >
         {/* Header */}
         <div
-          className="flex items-center gap-3 p-4 border-b"
+          className="flex items-center gap-3 p-4 border-b flex-shrink-0"
           style={{ borderColor: 'hsl(var(--sidebar-border))' }}
         >
           <div
@@ -91,49 +104,68 @@ export function Sidebar({ profile, collapsed, onToggle }: SidebarProps) {
           )}
         </div>
 
-        {/* Navigation */}
-        <ScrollArea className="flex-1 py-3">
+        {/* Navigation — Grouped */}
+        <ScrollArea className="flex-1 py-2">
           <nav className="px-2 space-y-1">
-            {navItems.map((item) => {
-              const Icon = ICON_MAP[item.icon as keyof typeof ICON_MAP]
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href) && item.href !== '/tickets/new')
-              const navLink = (
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
-                    collapsed && 'justify-center px-0',
-                    isActive
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                  )}
-                  style={
-                    isActive
-                      ? { background: 'hsl(var(--sidebar-accent))', color: 'hsl(var(--sidebar-accent-foreground))' }
-                      : {}
-                  }
-                >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
-              )
+            {navGroups.map((group) => (
+              <div key={group.group}>
+                {/* Group Label */}
+                {!collapsed && (
+                  <p
+                    className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider opacity-40 select-none"
+                    style={{ color: 'hsl(var(--sidebar-foreground))' }}
+                  >
+                    {group.group}
+                  </p>
+                )}
+                {collapsed && <div className="pt-2" />}
 
-              if (collapsed) {
-                return (
-                  <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>{navLink}</TooltipTrigger>
-                    <TooltipContent side="right">{item.label}</TooltipContent>
-                  </Tooltip>
-                )
-              }
-              return <div key={item.href}>{navLink}</div>
-            })}
+                {group.items.map((item) => {
+                  const Icon = ICON_MAP[item.icon as keyof typeof ICON_MAP]
+                  const active = isActive(item.href)
+
+                  const navLink = (
+                    <Link
+                      href={item.href}
+                      onClick={() => {
+                        if (mobile) onNavigate?.()
+                      }}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150',
+                        collapsed && 'justify-center px-0',
+                        active
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                      )}
+                      style={
+                        active
+                          ? { background: 'hsl(var(--sidebar-accent))', color: 'hsl(var(--sidebar-accent-foreground))' }
+                          : {}
+                      }
+                    >
+                      {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  )
+
+                  if (collapsed) {
+                    return (
+                      <Tooltip key={item.href}>
+                        <TooltipTrigger asChild>{navLink}</TooltipTrigger>
+                        <TooltipContent side="right">{item.label}</TooltipContent>
+                      </Tooltip>
+                    )
+                  }
+                  return <div key={item.href}>{navLink}</div>
+                })}
+              </div>
+            ))}
           </nav>
         </ScrollArea>
 
         {/* User & Logout */}
         <div
-          className="p-3 border-t space-y-2"
+          className="p-3 border-t space-y-2 flex-shrink-0"
           style={{ borderColor: 'hsl(var(--sidebar-border))' }}
         >
           {/* User Info */}
@@ -155,7 +187,7 @@ export function Sidebar({ profile, collapsed, onToggle }: SidebarProps) {
                   {profile.full_name}
                 </p>
                 <p className="text-xs opacity-60 truncate" style={{ color: 'hsl(var(--sidebar-foreground))' }}>
-                  {profile.role === 'it_admin' ? 'IT Admin' : 'Staff'}
+                  {getRoleLabel(profile.role)}
                 </p>
               </div>
             </div>

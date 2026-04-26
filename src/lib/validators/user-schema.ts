@@ -17,7 +17,7 @@ export const createUserSchema = z.object({
     .email('Format email tidak valid')
     .toLowerCase()
     .trim(),
-  role: z.enum(['staff', 'it_admin'], {
+  role: z.enum(['staff', 'it_admin', 'admin', 'sarana'], {
     error: 'Role tidak valid',
   }),
   department: z
@@ -43,7 +43,7 @@ export const updateUserSchema = z.object({
     .max(100, 'Nama lengkap maksimal 100 karakter')
     .trim()
     .optional(),
-  role: z.enum(['staff', 'it_admin']).optional(),
+  role: z.enum(['staff', 'it_admin', 'admin', 'sarana']).optional(),
   department: z
     .string()
     .max(100)

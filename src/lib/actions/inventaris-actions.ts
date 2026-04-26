@@ -1,0 +1,296 @@
+'use server'
+
+// =============================================================================
+// lib/actions/inventaris-actions.ts
+// Server Actions untuk CRUD inventaris barang
+// =============================================================================
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
+import type {
+  ActionResult, Inventaris, PaginatedResult, InventarisFilters,
+  DashboardInventarisStats, InventarisByKategori, InventarisByKondisi,
+} from '@/lib/types'
+import { DEFAULT_PAGE_SIZE, STOK_RENDAH_THRESHOLD } from '@/lib/constants'
+
+async function requireSaranaOrAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Tidak terautentikasi')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (!['sarana', 'admin'].includes(profile?.role ?? '')) {
+    throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
+  }
+  return { supabase, user, role: profile!.role }
+}
+
+async function requireSarana() {
+  const ctx = await requireSaranaOrAdmin()
+  if (ctx.role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
+  return ctx
+}
+
+// =============================================================================
+// READ
+// =============================================================================
+
+export async function getInventaris(
+  filters?: InventarisFilters,
+  page = 1,
+  per_page = DEFAULT_PAGE_SIZE
+): Promise<PaginatedResult<Inventaris>> {
+  const supabase = await createClient()
+  const from = (page - 1) * per_page
+  const to = from + per_page - 1
+
+  let query = supabase
+    .from('inventaris')
+    .select('*', { count: 'exact' })
+    .eq('is_deleted', false)
+    .order('nama_barang', { ascending: true })
+    .range(from, to)
+
+  if (filters?.search) {
+    query = query.or(`nama_barang.ilike.%${filters.search}%,kode_barang.ilike.%${filters.search}%`)
+  }
+  if (filters?.kategori && filters.kategori !== 'all') query = query.eq('kategori', filters.kategori)
+  if (filters?.kondisi && filters.kondisi !== 'all')   query = query.eq('kondisi', filters.kondisi)
+  if (filters?.lokasi) query = query.ilike('lokasi_penempatan', `%${filters.lokasi}%`)
+
+  const { data, count, error } = await query
+  if (error) throw new Error(error.message)
+
+  return {
+    data: (data ?? []) as Inventaris[],
+    pagination: { page, per_page, total: count ?? 0, total_pages: Math.ceil((count ?? 0) / per_page) },
+  }
+}
+
+export async function getInventarisById(id: string): Promise<Inventaris | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('inventaris').select('*').eq('id', id).eq('is_deleted', false).single()
+  return data as Inventaris | null
+}
+
+export async function getInventarisList(): Promise<Inventaris[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('inventaris').select('*').eq('is_deleted', false)
+    .neq('kondisi', 'rusak_berat')
+    .order('nama_barang', { ascending: true })
+  return (data ?? []) as Inventaris[]
+}
+
+export async function generateKodeBarang(kategori: string): Promise<string> {
+  const supabase = await createClient()
+  const prefixMap: Record<string, string> = {
+    elektronik: 'ELK', furniture: 'FRN', atk: 'ATK',
+    kendaraan: 'KDR', alat_olahraga: 'OLR', alat_lab: 'LAB', lainnya: 'LNY',
+  }
+  const prefix = prefixMap[kategori] ?? 'LNY'
+
+  const { data } = await supabase
+    .from('inventaris')
+    .select('kode_barang')
+    .like('kode_barang', `INV-${prefix}-%`)
+    .order('kode_barang', { ascending: false })
+    .limit(1)
+    .single()
+
+  let seq = 1
+  if (data?.kode_barang) {
+    const parts = data.kode_barang.split('-')
+    seq = (parseInt(parts[2] ?? '0', 10) || 0) + 1
+  }
+  return `INV-${prefix}-${String(seq).padStart(4, '0')}`
+}
+
+// =============================================================================
+// CREATE
+// =============================================================================
+
+export async function createInventaris(formData: FormData): Promise<ActionResult<Inventaris>> {
+  try {
+    await requireSarana()
+    const supabase = await createClient()
+    const kategori = formData.get('kategori') as string
+
+    // Auto-generate kode jika tidak disertakan
+    const kodeBarang = (formData.get('kode_barang') as string) || await generateKodeBarang(kategori)
+
+    const payload = {
+      kode_barang: kodeBarang,
+      nama_barang: formData.get('nama_barang') as string,
+      kategori,
+      merk: (formData.get('merk') as string) || null,
+      tipe_model: (formData.get('tipe_model') as string) || null,
+      jumlah_stok: Number(formData.get('jumlah_stok')),
+      satuan: formData.get('satuan') as string,
+      kondisi: (formData.get('kondisi') as string) || 'baik',
+      lokasi_penempatan: formData.get('lokasi_penempatan') as string,
+      tanggal_perolehan: formData.get('tanggal_perolehan') as string,
+      sumber_dana: (formData.get('sumber_dana') as string) || null,
+      nilai_perolehan: formData.get('nilai_perolehan') ? Number(formData.get('nilai_perolehan')) : null,
+      foto: (formData.get('foto') as string) || null,
+      catatan: (formData.get('catatan') as string) || null,
+    }
+
+    if (!payload.nama_barang || !payload.kategori || !payload.satuan || !payload.lokasi_penempatan || !payload.tanggal_perolehan) {
+      return { success: false, error: 'Field wajib belum lengkap' }
+    }
+
+    const { data, error } = await supabase.from('inventaris').insert(payload).select().single()
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath('/inventaris/barang')
+    revalidatePath('/inventaris')
+    return { success: true, data: data as Inventaris }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
+  }
+}
+
+// =============================================================================
+// UPDATE
+// =============================================================================
+
+export async function updateInventaris(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireSarana()
+    const supabase = await createClient()
+    const id = formData.get('id') as string
+
+    const updates: Record<string, unknown> = {
+      nama_barang: formData.get('nama_barang') as string,
+      kategori: formData.get('kategori') as string,
+      merk: (formData.get('merk') as string) || null,
+      tipe_model: (formData.get('tipe_model') as string) || null,
+      jumlah_stok: Number(formData.get('jumlah_stok')),
+      satuan: formData.get('satuan') as string,
+      kondisi: formData.get('kondisi') as string,
+      lokasi_penempatan: formData.get('lokasi_penempatan') as string,
+      tanggal_perolehan: formData.get('tanggal_perolehan') as string,
+      sumber_dana: (formData.get('sumber_dana') as string) || null,
+      nilai_perolehan: formData.get('nilai_perolehan') ? Number(formData.get('nilai_perolehan')) : null,
+      catatan: (formData.get('catatan') as string) || null,
+    }
+    if (formData.get('foto')) updates.foto = formData.get('foto') as string
+
+    const { error } = await supabase.from('inventaris').update(updates).eq('id', id)
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath('/inventaris/barang')
+    revalidatePath(`/inventaris/barang/${id}`)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
+  }
+}
+
+// =============================================================================
+// DELETE (Soft Delete)
+// =============================================================================
+
+export async function deleteInventaris(id: string): Promise<ActionResult> {
+  try {
+    await requireSarana()
+    const supabase = await createClient()
+
+    // Cek peminjaman aktif
+    const { count } = await supabase
+      .from('peminjaman_barang').select('*', { count: 'exact', head: true })
+      .eq('inventaris_id', id).in('status', ['menunggu', 'dipinjam', 'terlambat'])
+
+    if (count && count > 0) {
+      return { success: false, error: 'Tidak bisa menghapus barang yang masih dipinjam' }
+    }
+
+    const { error } = await supabase.from('inventaris').update({ is_deleted: true }).eq('id', id)
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath('/inventaris/barang')
+    revalidatePath('/inventaris')
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
+  }
+}
+
+// =============================================================================
+// DASHBOARD INVENTARIS
+// =============================================================================
+
+export async function getDashboardInventaris(): Promise<
+  DashboardInventarisStats & {
+    byKategori: InventarisByKategori[]
+    byKondisi: InventarisByKondisi[]
+    terlambat: Array<{ peminjaman: unknown; daysLate: number }>
+    stokRendah: Inventaris[]
+  }
+> {
+  const supabase = await createClient()
+
+  const { data: items } = await supabase
+    .from('inventaris').select('*').eq('is_deleted', false)
+
+  const totalJenis = items?.length ?? 0
+  const totalUnit = items?.reduce((sum, i) => sum + i.jumlah_stok, 0) ?? 0
+  const totalNilai = items?.reduce((sum, i) => sum + (i.nilai_perolehan ?? 0) * i.jumlah_stok, 0) ?? 0
+
+  // By kategori
+  const kategoriMap = new Map<string, { jenis: number; unit: number }>()
+  for (const item of items ?? []) {
+    const k = kategoriMap.get(item.kategori) ?? { jenis: 0, unit: 0 }
+    kategoriMap.set(item.kategori, { jenis: k.jenis + 1, unit: k.unit + item.jumlah_stok })
+  }
+  const byKategori: InventarisByKategori[] = Array.from(kategoriMap.entries()).map(([k, v]) => ({
+    kategori: k as never,
+    jumlah_jenis: v.jenis,
+    jumlah_unit: v.unit,
+  }))
+
+  // By kondisi
+  const kondisiMap = new Map<string, number>()
+  for (const item of items ?? []) {
+    kondisiMap.set(item.kondisi, (kondisiMap.get(item.kondisi) ?? 0) + 1)
+  }
+  const byKondisi: InventarisByKondisi[] = Array.from(kondisiMap.entries()).map(([k, v]) => ({
+    kondisi: k as never,
+    jumlah: v,
+  }))
+
+  // Peminjaman aktif
+  const { data: pinjamAktif, count: pinjamItemCount } = await supabase
+    .from('peminjaman_barang').select('jumlah_dipinjam', { count: 'exact' })
+    .in('status', ['dipinjam', 'terlambat'])
+  const totalUnitDipinjam = pinjamAktif?.reduce((s, p) => s + p.jumlah_dipinjam, 0) ?? 0
+
+  // Terlambat
+  const today = new Date().toISOString().split('T')[0]
+  const { data: terlambatData } = await supabase
+    .from('peminjaman_barang')
+    .select('*, inventaris(*), user:user_id(full_name)')
+    .in('status', ['dipinjam', 'terlambat'])
+    .lt('tanggal_kembali_estimasi', today)
+  const terlambat = (terlambatData ?? []).map(p => ({
+    peminjaman: p,
+    daysLate: Math.floor((Date.now() - new Date(p.tanggal_kembali_estimasi).getTime()) / 86400000),
+  }))
+
+  // Stok rendah
+  const stokRendah = (items ?? []).filter(i => i.jumlah_stok < STOK_RENDAH_THRESHOLD) as Inventaris[]
+
+  return {
+    total_jenis_barang: totalJenis,
+    total_unit: totalUnit,
+    total_nilai_aset: totalNilai,
+    sedang_dipinjam_item: pinjamItemCount ?? 0,
+    sedang_dipinjam_unit: totalUnitDipinjam,
+    terlambat_count: terlambat.length,
+    stok_rendah_count: stokRendah.length,
+    byKategori,
+    byKondisi,
+    terlambat,
+    stokRendah,
+  }
+}

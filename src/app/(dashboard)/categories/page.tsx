@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: 'Kategori' }
 
 export default async function CategoriesPage() {
   const profile = await getCurrentUser()
-  if (!profile || profile.role !== 'it_admin') redirect('/tickets')
+  if (!profile || (profile.role !== 'it_admin' && profile.role !== 'admin')) redirect('/tickets')
 
   const categories = await getCategories()
   return <CategoriesClient categories={categories} />

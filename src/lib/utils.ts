@@ -82,6 +82,19 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
+ * Format angka ke format Rupiah Indonesia
+ * Contoh: 8500000 → "Rp 8.500.000"
+ */
+export function formatRupiah(amount: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+/**
  * Hitung durasi antara dua tanggal dalam jam (pembulatan ke atas)
  */
 export function calculateDurationHours(from: string, to: string): number {

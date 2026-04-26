@@ -1,80 +1,90 @@
-'use client'
+"use client";
 
 // =============================================================================
 // app/(auth)/login/page.tsx
 // Halaman Login — form email + password dengan validasi
 // =============================================================================
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 const loginSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
-  password: z.string().min(1, 'Password tidak boleh kosong'),
-})
-type LoginSchema = z.infer<typeof loginSchema>
+  email: z.string().email("Format email tidak valid"),
+  password: z.string().min(1, "Password tidak boleh kosong"),
+});
+type LoginSchema = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  })
+    defaultValues: { email: "", password: "" },
+  });
 
   async function onSubmit(values: LoginSchema) {
     startTransition(async () => {
-      const supabase = createClient()
+      const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
-      })
+      });
 
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast.error('Email atau password salah')
-        } else if (error.message.includes('Email not confirmed')) {
-          toast.error('Email belum dikonfirmasi')
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("Email atau password salah");
+        } else if (error.message.includes("Email not confirmed")) {
+          toast.error("Email belum dikonfirmasi");
         } else {
-          toast.error(error.message)
+          toast.error(error.message);
         }
-        return
+        return;
       }
 
       if (!data.user) {
-        toast.error('Login gagal, coba lagi')
-        return
+        toast.error("Login gagal, coba lagi");
+        return;
       }
 
       // Ambil role untuk redirect yang sesuai
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, is_active')
-        .eq('id', data.user.id)
-        .single()
+        .from("profiles")
+        .select("role, is_active")
+        .eq("id", data.user.id)
+        .single();
 
       if (profile && !profile.is_active) {
-        await supabase.auth.signOut()
-        toast.error('Akun Anda dinonaktifkan. Hubungi IT Admin.')
-        return
+        await supabase.auth.signOut();
+        toast.error("Akun Anda dinonaktifkan. Hubungi IT Admin.");
+        return;
       }
 
-      toast.success('Login berhasil! Selamat datang.')
-      const redirectTo = profile?.role === 'it_admin' ? '/dashboard' : '/tickets'
-      router.push(redirectTo)
-      router.refresh()
-    })
+      toast.success("Login berhasil! Selamat datang.");
+      let redirectTo = "/tickets";
+      if (profile?.role === "admin" || profile?.role === "it_admin")
+        redirectTo = "/dashboard";
+      else if (profile?.role === "sarana") redirectTo = "/ruangan/approval";
+      router.push(redirectTo);
+      router.refresh();
+    });
   }
 
   return (
@@ -121,7 +131,7 @@ export default function LoginPage() {
                   <div className="relative">
                     <Input
                       id="login-password"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       placeholder="Masukkan password"
                       autoComplete="current-password"
                       disabled={isPending}
@@ -134,7 +144,11 @@ export default function LoginPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </FormControl>
@@ -149,7 +163,7 @@ export default function LoginPage() {
             type="submit"
             className="w-full mt-2"
             disabled={isPending}
-            style={{ background: 'hsl(160 36% 18%)' }}
+            style={{ background: "hsl(160 36% 18%)" }}
           >
             {isPending ? (
               <>
@@ -170,5 +184,5 @@ export default function LoginPage() {
         Lupa password? Hubungi IT Admin untuk reset akun.
       </p>
     </div>
-  )
+  );
 }

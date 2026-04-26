@@ -1,12 +1,36 @@
 // =============================================================================
 // src/proxy.ts  (menggantikan middleware.ts — Next.js 16+)
 // Auth protection & role-based routing
+// Mendukung 4 role: staff, it_admin, admin, sarana
 // =============================================================================
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const ADMIN_ONLY_ROUTES = ['/dashboard', '/categories', '/users', '/sla', '/reports']
+// Route yang hanya bisa diakses Admin (admin role)
+const ADMIN_ONLY_ROUTES = [
+  '/users',
+  '/ruangan/kelola',
+]
+
+// Route yang bisa diakses IT Admin dan Admin
+const IT_ADMIN_ROUTES = [
+  '/dashboard',
+  '/categories',
+  '/sla',
+  '/reports',
+]
+
+// Route yang hanya bisa diakses Sarana
+const SARANA_ONLY_ROUTES = [
+  '/ruangan/approval',
+  '/inventaris/barang/baru',
+  '/inventaris/barang/edit',
+  '/inventaris/mutasi/baru',
+  '/inventaris/stock-opname',
+]
+
+// Route publik — tidak perlu login
 const PUBLIC_ROUTES = ['/login', '/auth/callback']
 
 export async function proxy(request: NextRequest) {
@@ -41,12 +65,12 @@ export async function proxy(request: NextRequest) {
   // Public routes — boleh akses tanpa login
   const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r))
   if (isPublicRoute) {
-    // Kalau sudah login dan ke /login, redirect ke home
+    // Kalau sudah login dan ke /login, redirect ke home sesuai role
     if (user && pathname === '/login') {
       const { data: profile } = await supabase
         .from('profiles').select('role').eq('id', user.id).single()
       return NextResponse.redirect(
-        new URL(profile?.role === 'it_admin' ? '/dashboard' : '/tickets', request.url)
+        new URL(getDefaultRoute(profile?.role), request.url)
       )
     }
     return supabaseResponse
@@ -59,30 +83,55 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Check admin-only routes
-  const isAdminRoute = ADMIN_ONLY_ROUTES.some(r => pathname.startsWith(r))
-  if (isAdminRoute) {
-    const { data: profile } = await supabase
-      .from('profiles').select('role, is_active').eq('id', user.id).single()
-    if (profile && !profile.is_active) {
-      await supabase.auth.signOut()
-      return NextResponse.redirect(new URL('/login?error=account_disabled', request.url))
-    }
-    if (profile?.role !== 'it_admin') {
-      return NextResponse.redirect(new URL('/tickets', request.url))
-    }
+  // Ambil profil untuk cek role & status
+  const { data: profile } = await supabase
+    .from('profiles').select('role, is_active').eq('id', user.id).single()
+
+  // Akun nonaktif → logout & redirect
+  if (profile && !profile.is_active) {
+    await supabase.auth.signOut()
+    return NextResponse.redirect(new URL('/login?error=account_disabled', request.url))
   }
 
-  // Redirect root
+  const role = profile?.role ?? 'staff'
+
+  // Check admin-only routes (admin role only)
+  const isAdminRoute = ADMIN_ONLY_ROUTES.some(r => pathname.startsWith(r))
+  if (isAdminRoute && role !== 'admin') {
+    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+  }
+
+  // Check IT/Admin routes
+  const isITRoute = IT_ADMIN_ROUTES.some(r => pathname.startsWith(r))
+  if (isITRoute && role !== 'it_admin' && role !== 'admin') {
+    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+  }
+
+  // Check sarana-only routes
+  const isSaranaRoute = SARANA_ONLY_ROUTES.some(r => pathname.startsWith(r))
+  if (isSaranaRoute && role !== 'sarana') {
+    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+  }
+
+  // Redirect root ke halaman default sesuai role
   if (pathname === '/') {
-    const { data: profile } = await supabase
-      .from('profiles').select('role').eq('id', user.id).single()
     return NextResponse.redirect(
-      new URL(profile?.role === 'it_admin' ? '/dashboard' : '/tickets', request.url)
+      new URL(getDefaultRoute(role), request.url)
     )
   }
 
   return supabaseResponse
+}
+
+/** Halaman default saat login, berdasarkan role */
+function getDefaultRoute(role?: string): string {
+  switch (role) {
+    case 'admin':    return '/dashboard'
+    case 'it_admin': return '/dashboard'
+    case 'sarana':   return '/ruangan/approval'
+    case 'staff':
+    default:         return '/tickets'
+  }
 }
 
 export const config = {

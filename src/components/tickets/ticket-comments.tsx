@@ -34,7 +34,7 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
   // Stable client instance — tidak dibuat ulang setiap render
   const supabase = useRef(createClient()).current
 
-  const isAdmin = currentProfile.role === 'it_admin'
+  const isAdmin = currentProfile.role === 'it_admin' || currentProfile.role === 'admin'
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

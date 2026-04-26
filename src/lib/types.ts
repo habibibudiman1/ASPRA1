@@ -7,7 +7,7 @@
 // DATABASE TYPES
 // =============================================================================
 
-export type UserRole = 'staff' | 'it_admin'
+export type UserRole = 'staff' | 'it_admin' | 'admin' | 'sarana'
 
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed' | 'reopened'
 
@@ -23,6 +23,18 @@ export type ActivityAction =
   | 'attachment_added'
   | 'attachment_removed'
   | 'reopened'
+
+// Ruangan
+export type RuanganStatus = 'tersedia' | 'maintenance' | 'tidak_aktif'
+export type BookingStatus = 'menunggu' | 'disetujui' | 'ditolak' | 'selesai' | 'dibatalkan'
+
+// Inventaris
+export type InventarisKategori = 'elektronik' | 'furniture' | 'atk' | 'kendaraan' | 'alat_olahraga' | 'alat_lab' | 'lainnya'
+export type InventarisKondisi  = 'baik' | 'rusak_ringan' | 'rusak_berat'
+export type PeminjamanBarangStatus = 'menunggu' | 'dipinjam' | 'dikembalikan' | 'terlambat' | 'hilang'
+export type KondisiSaatKembali = 'baik' | 'rusak_ringan' | 'rusak_berat' | 'hilang'
+export type JenisMutasi = 'masuk' | 'keluar' | 'pindah_lokasi' | 'rusak' | 'hilang' | 'disposal' | 'perbaikan'
+export type NotifikasiTipe = 'tiket' | 'booking_ruangan' | 'peminjaman_barang' | 'inventaris' | 'sistem'
 
 // =============================================================================
 // TABEL: profiles
@@ -161,10 +173,155 @@ export interface Notification {
   ticket_id: string | null
   title: string
   message: string
+  tipe: NotifikasiTipe
+  reference_id: string | null
   is_read: boolean
   created_at: string
   // Relasi
   ticket?: Ticket | null
+}
+
+// =============================================================================
+// TABEL: ruangan
+// =============================================================================
+export interface Ruangan {
+  id: string
+  nama_ruangan: string
+  lokasi_gedung: string
+  lantai: number | null
+  kapasitas: number
+  fasilitas: string[]
+  status: RuanganStatus
+  foto: string | null
+  keterangan: string | null
+  is_deleted: boolean
+  created_at: string
+  updated_at: string
+}
+
+// =============================================================================
+// TABEL: peminjaman_ruangan
+// =============================================================================
+export interface PeminjamanRuangan {
+  id: string
+  ruangan_id: string
+  user_id: string
+  tanggal: string       // DATE → string 'YYYY-MM-DD'
+  jam_mulai: string     // TIME → string 'HH:mm:ss'
+  jam_selesai: string
+  keperluan: string
+  jumlah_peserta: number | null
+  status: BookingStatus
+  catatan_admin: string | null
+  approved_by: string | null
+  approved_at: string | null
+  cancelled_reason: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PeminjamanRuanganWithRelations extends PeminjamanRuangan {
+  ruangan: Ruangan
+  user: Profile
+  approver?: Profile | null
+}
+
+// =============================================================================
+// TABEL: inventaris
+// =============================================================================
+export interface Inventaris {
+  id: string
+  kode_barang: string
+  nama_barang: string
+  kategori: InventarisKategori
+  merk: string | null
+  tipe_model: string | null
+  jumlah_stok: number
+  satuan: string
+  kondisi: InventarisKondisi
+  lokasi_penempatan: string
+  tanggal_perolehan: string   // DATE
+  sumber_dana: string | null
+  nilai_perolehan: number | null
+  foto: string | null
+  catatan: string | null
+  is_deleted: boolean
+  created_at: string
+  updated_at: string
+  // Computed (joined)
+  stok_tersedia?: number   // jumlah_stok - yang sedang dipinjam
+}
+
+// =============================================================================
+// TABEL: peminjaman_barang
+// =============================================================================
+export interface PeminjamanBarang {
+  id: string
+  inventaris_id: string
+  user_id: string
+  jumlah_dipinjam: number
+  tanggal_pinjam: string
+  tanggal_kembali_estimasi: string
+  tanggal_dikembalikan_aktual: string | null
+  status: PeminjamanBarangStatus
+  kondisi_saat_kembali: KondisiSaatKembali | null
+  catatan_peminjam: string | null
+  catatan_sarana: string | null
+  approved_by: string | null
+  approved_at: string | null
+  returned_to: string | null
+  returned_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PeminjamanBarangWithRelations extends PeminjamanBarang {
+  inventaris: Inventaris
+  user: Profile
+  approver?: Profile | null
+  receiver?: Profile | null
+}
+
+// =============================================================================
+// TABEL: mutasi_barang
+// =============================================================================
+export interface MutasiBarang {
+  id: string
+  inventaris_id: string
+  jenis_mutasi: JenisMutasi
+  jumlah: number
+  stok_sebelum: number
+  stok_sesudah: number
+  dari_lokasi: string | null
+  ke_lokasi: string | null
+  keterangan: string
+  user_id: string
+  tanggal: string
+  bukti_foto: string | null
+  created_at: string
+  // Relasi
+  inventaris?: Inventaris
+  user?: Profile
+}
+
+// =============================================================================
+// TABEL: stock_opname
+// =============================================================================
+export interface StockOpname {
+  id: string
+  inventaris_id: string
+  jumlah_sistem: number
+  jumlah_fisik: number
+  selisih: number         // GENERATED
+  status: 'sesuai' | 'tidak_sesuai'  // GENERATED
+  keterangan: string | null
+  user_id: string
+  tanggal_opname: string
+  sesi_id: string
+  created_at: string
+  // Relasi
+  inventaris?: Inventaris
+  user?: Profile
 }
 
 // =============================================================================
@@ -191,7 +348,7 @@ export interface CreateTicketInput {
 export interface UpdateTicketStatusInput {
   ticket_id: string
   status: TicketStatus
-  comment?: string // Komentar opsional saat update status
+  comment?: string
 }
 
 export interface AssignTicketInput {
@@ -250,6 +407,73 @@ export interface UpdateSLAPolicyInput {
   resolution_time_minutes: number
 }
 
+// Ruangan inputs
+export interface CreateRuanganInput {
+  nama_ruangan: string
+  lokasi_gedung: string
+  lantai?: number
+  kapasitas: number
+  fasilitas?: string[]
+  status?: RuanganStatus
+  foto?: string
+  keterangan?: string
+}
+
+export interface UpdateRuanganInput extends Partial<CreateRuanganInput> {
+  id: string
+}
+
+export interface CreateBookingInput {
+  ruangan_id: string
+  tanggal: string       // 'YYYY-MM-DD'
+  jam_mulai: string     // 'HH:mm'
+  jam_selesai: string   // 'HH:mm'
+  keperluan: string
+  jumlah_peserta?: number
+}
+
+// Inventaris inputs
+export interface CreateInventarisInput {
+  nama_barang: string
+  kategori: InventarisKategori
+  merk?: string
+  tipe_model?: string
+  jumlah_stok: number
+  satuan: string
+  kondisi?: InventarisKondisi
+  lokasi_penempatan: string
+  tanggal_perolehan: string
+  sumber_dana?: string
+  nilai_perolehan?: number
+  foto?: string
+  catatan?: string
+}
+
+export interface CreatePeminjamanBarangInput {
+  inventaris_id: string
+  jumlah_dipinjam: number
+  tanggal_pinjam: string
+  tanggal_kembali_estimasi: string
+  catatan_peminjam?: string
+}
+
+export interface CreateMutasiInput {
+  inventaris_id: string
+  jenis_mutasi: JenisMutasi
+  jumlah: number
+  dari_lokasi?: string
+  ke_lokasi?: string
+  keterangan: string
+  tanggal: string
+  bukti_foto?: string
+}
+
+export interface StockOpnameItemInput {
+  inventaris_id: string
+  jumlah_fisik: number
+  keterangan?: string
+}
+
 // =============================================================================
 // DASHBOARD / ANALYTICS TYPES
 // =============================================================================
@@ -261,8 +485,8 @@ export interface DashboardStats {
   resolved_tickets: number
   closed_tickets: number
   avg_resolution_hours: number
-  sla_response_compliance: number   // persentase 0-100
-  sla_resolution_compliance: number // persentase 0-100
+  sla_response_compliance: number
+  sla_resolution_compliance: number
 }
 
 export interface TicketsByStatus {
@@ -277,7 +501,7 @@ export interface TicketsByCategory {
 }
 
 export interface TicketsByMonth {
-  month: string  // Format: 'Jan 2025'
+  month: string
   created: number
   resolved: number
 }
@@ -287,6 +511,44 @@ export interface SLAComplianceData {
   response_compliance: number
   resolution_compliance: number
   total_tickets: number
+}
+
+// Dashboard Ruangan
+export interface DashboardRuanganStats {
+  total_ruangan: number
+  tersedia: number
+  sedang_dipakai: number
+  maintenance: number
+  booking_hari_ini: number
+  booking_menunggu: number
+}
+
+export interface RuanganStatusRealtime {
+  ruangan: Ruangan
+  booking_aktif?: PeminjamanRuanganWithRelations | null
+  booking_berikutnya?: PeminjamanRuanganWithRelations | null
+}
+
+// Dashboard Inventaris
+export interface DashboardInventarisStats {
+  total_jenis_barang: number
+  total_unit: number
+  total_nilai_aset: number
+  sedang_dipinjam_item: number
+  sedang_dipinjam_unit: number
+  terlambat_count: number
+  stok_rendah_count: number
+}
+
+export interface InventarisByKategori {
+  kategori: InventarisKategori
+  jumlah_jenis: number
+  jumlah_unit: number
+}
+
+export interface InventarisByKondisi {
+  kondisi: InventarisKondisi
+  jumlah: number
 }
 
 // =============================================================================
@@ -303,6 +565,36 @@ export interface TicketFilters {
   date_to?: string
 }
 
+export interface BookingFilters {
+  status?: BookingStatus | 'all'
+  ruangan_id?: string | 'all'
+  user_id?: string | 'all'
+  date_from?: string
+  date_to?: string
+  search?: string
+}
+
+export interface InventarisFilters {
+  kategori?: InventarisKategori | 'all'
+  kondisi?: InventarisKondisi | 'all'
+  lokasi?: string
+  search?: string
+}
+
+export interface PeminjamanBarangFilters {
+  status?: PeminjamanBarangStatus | 'all'
+  user_id?: string | 'all'
+  date_from?: string
+  date_to?: string
+}
+
+export interface MutasiFilters {
+  inventaris_id?: string
+  jenis_mutasi?: JenisMutasi | 'all'
+  date_from?: string
+  date_to?: string
+}
+
 export interface PaginationState {
   page: number
   per_page: number
@@ -315,7 +607,6 @@ export interface PaginatedResult<T> {
   pagination: PaginationState
 }
 
-// Periode filter untuk dashboard
 export type DatePeriod = '7d' | '30d' | '90d' | 'custom'
 
 // =============================================================================

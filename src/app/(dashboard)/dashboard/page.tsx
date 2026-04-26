@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/actions/user-actions'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardClient } from '@/components/dashboard/dashboard-client'
+import type { TicketPriority, TicketStatus } from '@/lib/types'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Dashboard' }
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: 'Dashboard' }
 export default async function DashboardPage() {
   const profile = await getCurrentUser()
   if (!profile) redirect('/login')
-  if (profile.role !== 'it_admin') redirect('/tickets')
+  if (profile.role !== 'it_admin' && profile.role !== 'admin') redirect('/tickets')
 
   const supabase = await createClient()
 
@@ -34,7 +35,16 @@ export default async function DashboardPage() {
   ])
 
   const allTickets = ticketsResult.data ?? []
-  const recent = recentTickets.data ?? []
+  const recent = (recentTickets.data ?? []).map((item) => ({
+    id: item.id as string,
+    ticket_number: item.ticket_number as string,
+    title: item.title as string,
+    status: item.status as TicketStatus,
+    priority: item.priority as TicketPriority,
+    created_at: item.created_at as string,
+    reporter: Array.isArray(item.reporter) ? (item.reporter[0] as { full_name: string } | undefined) ?? null : null,
+    assignee: Array.isArray(item.assignee) ? (item.assignee[0] as { full_name: string } | undefined) ?? null : null,
+  }))
 
   // Hitung statistik
   const total = allTickets.length
@@ -70,7 +80,7 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       stats={{ total, byStatus, avgResolutionHours, slaResponseCompliance, slaResolutionCompliance }}
-      recentTickets={recent as any[]}
+      recentTickets={recent}
     />
   )
 }

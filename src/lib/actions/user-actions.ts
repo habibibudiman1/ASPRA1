@@ -16,7 +16,7 @@ async function requireAdmin() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'it_admin') throw new Error('Hanya IT Admin yang bisa melakukan aksi ini')
+  if (profile?.role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
   return { supabase, user }
 }
 
@@ -28,7 +28,7 @@ export async function getCurrentUser(): Promise<Profile | null> {
   return data ?? null
 }
 
-export async function getUsers(role?: 'staff' | 'it_admin'): Promise<Profile[]> {
+export async function getUsers(role?: 'staff' | 'it_admin' | 'admin' | 'sarana'): Promise<Profile[]> {
   const supabase = await createClient()
   let query = supabase.from('profiles').select('*').order('full_name', { ascending: true })
   if (role) query = query.eq('role', role)
@@ -37,7 +37,14 @@ export async function getUsers(role?: 'staff' | 'it_admin'): Promise<Profile[]> 
 }
 
 export async function getAdmins(): Promise<Profile[]> {
-  return getUsers('it_admin')
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('role', ['it_admin', 'admin'])
+    .eq('is_active', true)
+    .order('full_name', { ascending: true })
+  return data ?? []
 }
 
 export async function createUser(formData: FormData): Promise<ActionResult> {

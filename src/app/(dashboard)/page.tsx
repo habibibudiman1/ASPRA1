@@ -9,5 +9,7 @@ import { getCurrentUser } from '@/lib/actions/user-actions'
 export default async function RootPage() {
   const profile = await getCurrentUser()
   if (!profile) redirect('/login')
-  redirect(profile.role === 'it_admin' ? '/dashboard' : '/tickets')
+  if (profile.role === 'admin' || profile.role === 'it_admin') redirect('/dashboard')
+  if (profile.role === 'sarana') redirect('/ruangan/approval')
+  redirect('/tickets')
 }
