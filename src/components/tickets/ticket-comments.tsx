@@ -2,10 +2,10 @@
 
 // =============================================================================
 // components/tickets/ticket-comments.tsx
-// Thread komentar dengan realtime update
+// Thread komentar dengan realtime update via Supabase WebSocket
 // =============================================================================
 
-import { useState, useTransition, useEffect, useRef } from 'react'
+import { useState, useTransition, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Send, Lock, Unlock, Trash2, Loader2 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -31,29 +31,64 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
   const [isInternal, setIsInternal] = useState(false)
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
+  // Stable client instance — tidak dibuat ulang setiap render
+  const supabase = useRef(createClient()).current
 
   const isAdmin = currentProfile.role === 'it_admin' || currentProfile.role === 'admin'
 
-  // Realtime subscription
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  // Realtime subscription via WebSocket
   useEffect(() => {
-    const supabase = createClient()
     const channel = supabase
       .channel(`comments-${ticketId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'ticket_comments', filter: `ticket_id=eq.${ticketId}` },
-        (payload) => {
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ticket_comments',
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        async (payload) => {
+          const newRow = payload.new as TicketComment
+
+          // Fetch author profile — tidak disertakan dalam payload realtime
+          const { data: author } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', newRow.author_id)
+            .single()
+
           setComments((prev) => {
-            // Hindari duplikasi
-            if (prev.some((c) => c.id === payload.new.id)) return prev
-            return [...prev, payload.new as TicketComment]
+            if (prev.some((c) => c.id === newRow.id)) return prev
+            return [...prev, { ...newRow, author: author ?? undefined }]
           })
+
+          scrollToBottom()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'ticket_comments',
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        (payload) => {
+          const deletedId = (payload.old as { id: string }).id
+          if (deletedId) {
+            setComments((prev) => prev.filter((c) => c.id !== deletedId))
+          }
         }
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [ticketId])
+  }, [ticketId, supabase, scrollToBottom])
 
   function handleSubmit() {
     if (!content.trim()) return
@@ -77,6 +112,7 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
     startTransition(async () => {
       const result = await deleteComment(commentId, ticketId)
       if (result.success) {
+        // Hapus langsung untuk pengirim; realtime sync untuk client lain
         setComments((prev) => prev.filter((c) => c.id !== commentId))
         toast.success('Komentar dihapus')
       } else {
@@ -85,7 +121,6 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
     })
   }
 
-  // Filter komentar: staff tidak melihat is_internal
   const visibleComments = isAdmin
     ? comments
     : comments.filter((c) => !c.is_internal)
@@ -105,7 +140,11 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
             return (
               <div
                 key={comment.id}
-                className={`flex gap-3 ${comment.is_internal ? 'bg-amber-50/70 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3' : ''}`}
+                className={`group flex gap-3 ${
+                  comment.is_internal
+                    ? 'bg-amber-50/70 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3'
+                    : ''
+                }`}
               >
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">
