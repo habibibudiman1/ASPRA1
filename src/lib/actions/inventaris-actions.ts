@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import type {
   ActionResult, Inventaris, PaginatedResult, InventarisFilters,
   DashboardInventarisStats, InventarisByKategori, InventarisByKondisi,
+  InventarisKategori, InventarisKondisi,
 } from '@/lib/types'
 import { DEFAULT_PAGE_SIZE, STOK_RENDAH_THRESHOLD } from '@/lib/constants'
 
@@ -292,5 +293,74 @@ export async function getDashboardInventaris(): Promise<
     byKondisi,
     terlambat,
     stokRendah,
+  }
+}
+
+// =============================================================================
+// IMPORT VIA CSV
+// Format: nama_barang,kategori,jumlah_stok,satuan,kondisi,lokasi_penempatan,
+//         merk,tipe_model,tanggal_perolehan,nilai_perolehan,catatan
+// =============================================================================
+
+const VALID_KATEGORI = ['elektronik', 'furniture', 'atk', 'kendaraan', 'alat_olahraga', 'alat_lab', 'lainnya']
+const VALID_KONDISI  = ['baik', 'rusak_ringan', 'rusak_berat']
+
+export async function importInventarisFromCSV(
+  rows: Array<{
+    nama_barang: string
+    kategori: string
+    jumlah_stok: number
+    satuan: string
+    kondisi?: string
+    lokasi_penempatan: string
+    tanggal_perolehan?: string
+    merk?: string
+    tipe_model?: string
+    nilai_perolehan?: number
+    catatan?: string
+  }>
+): Promise<ActionResult<{ imported: number; errors: string[] }>> {
+  try {
+    const { supabase } = await requireSaranaOrAdmin()
+    const errors: string[] = []
+    let imported = 0
+    const today = new Date().toISOString().split('T')[0]
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const rowNum = i + 2
+
+      if (!row.nama_barang?.trim()) { errors.push(`Baris ${rowNum}: nama_barang kosong`); continue }
+      const kat = row.kategori?.toLowerCase().trim()
+      if (!VALID_KATEGORI.includes(kat)) { errors.push(`Baris ${rowNum}: kategori "${row.kategori}" tidak valid`); continue }
+      if (!row.satuan?.trim()) { errors.push(`Baris ${rowNum}: satuan kosong`); continue }
+      if (!row.lokasi_penempatan?.trim()) { errors.push(`Baris ${rowNum}: lokasi_penempatan kosong`); continue }
+
+      const kondisi = VALID_KONDISI.includes(row.kondisi?.toLowerCase().trim() ?? '') ? row.kondisi!.toLowerCase().trim() : 'baik'
+      const kode_barang = await generateKodeBarang(kat)
+
+      const { error } = await supabase.from('inventaris').insert({
+        kode_barang,
+        nama_barang:        row.nama_barang.trim(),
+        kategori:           kat as InventarisKategori,
+        jumlah_stok:        Math.max(0, Number(row.jumlah_stok) || 0),
+        satuan:             row.satuan.trim(),
+        kondisi:            kondisi as InventarisKondisi,
+        lokasi_penempatan:  row.lokasi_penempatan.trim(),
+        tanggal_perolehan:  row.tanggal_perolehan?.trim() || today,
+        merk:               row.merk?.trim() || null,
+        tipe_model:         row.tipe_model?.trim() || null,
+        nilai_perolehan:    row.nilai_perolehan ? Number(row.nilai_perolehan) : null,
+        catatan:            row.catatan?.trim() || null,
+      })
+
+      if (error) { errors.push(`Baris ${rowNum}: ${error.message}`); continue }
+      imported++
+    }
+
+    revalidatePath('/inventaris/barang')
+    return { success: true, data: { imported, errors } }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengimport barang' }
   }
 }

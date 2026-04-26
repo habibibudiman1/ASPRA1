@@ -682,27 +682,6 @@ export interface RoomWithItems extends Room {
   item_units?: ItemUnit[]
 }
 
-export type BookingStatus = 'confirmed' | 'cancelled'
-
-export interface RoomBooking {
-  id: string
-  room_id: string
-  booked_by: string
-  title: string
-  description: string | null
-  start_time: string
-  end_time: string
-  status: BookingStatus
-  cancelled_by: string | null
-  cancelled_at: string | null
-  cancel_reason: string | null
-  created_at: string
-  updated_at: string
-  // relasi
-  room?: Room
-  booker?: Profile
-  canceller?: Profile | null
-}
 
 export type OpnameStatus = 'draft' | 'completed'
 
