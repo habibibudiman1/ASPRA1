@@ -1,0 +1,16 @@
+- generic [ref=e17]:
+  - link [ref=e18] [cursor=pointer]:
+    - /url: https://glideapps.com/?utm_source=user-app&utm_medium=referral
+    - img [ref=e19]
+  - generic [ref=e22]:
+    - banner [ref=e27]:
+      - generic [ref=e28] [cursor=pointer]:
+        - img [ref=e37]
+        - generic [ref=e29]: inventaris
+      - navigation [ref=e30]
+    - main [ref=e31]:
+      - generic [ref=e78]:
+        - heading "INVENTARIS ASSAKINAH" [level=4] [ref=e83]
+        - img "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/zr5HPPOwLpDSnkfSiaO0/pub/rEaa9wqCkMNgXLNr4gPs/DB.csv" [ref=e92]
+        - button "login" [ref=e99] [cursor=pointer]:
+          - generic [ref=e100]: login

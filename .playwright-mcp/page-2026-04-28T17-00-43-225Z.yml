@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: IT
+      - generic [ref=e7]:
+        - paragraph [ref=e8]: ASPRA
+        - paragraph [ref=e9]: Yayasan Assakinah Sejahtera
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "Selamat Datang" [level=2] [ref=e12]
+        - paragraph [ref=e13]: Masuk ke akun Anda untuk melanjutkan
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - text: Email
+          - textbox "nama@assakinah.or.id" [ref=e16]
+        - generic [ref=e17]:
+          - text: Password
+          - generic [ref=e18]:
+            - textbox "Masukkan password" [ref=e19]
+            - button [ref=e20]:
+              - img [ref=e21]
+        - button "Masuk" [ref=e24]:
+          - img
+          - text: Masuk
+      - paragraph [ref=e25]: Lupa password? Hubungi IT Admin untuk reset akun.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e31] [cursor=pointer]:
+    - img [ref=e32]
