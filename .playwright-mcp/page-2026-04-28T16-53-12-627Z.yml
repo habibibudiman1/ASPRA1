@@ -1,0 +1,9 @@
+- generic [ref=e17]:
+  - link [ref=e18] [cursor=pointer]:
+    - /url: https://glideapps.com/?utm_source=user-app&utm_medium=referral
+    - img [ref=e19]
+  - generic [ref=e22]:
+    - banner [ref=e27]:
+      - generic [ref=e29] [cursor=pointer]: inventaris
+      - navigation [ref=e30]
+    - main [ref=e31]
