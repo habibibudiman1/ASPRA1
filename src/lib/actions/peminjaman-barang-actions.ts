@@ -15,7 +15,7 @@ import { sendNotification } from './notification-actions'
 
 async function requireAuth() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
   if (!user) throw new Error('Tidak terautentikasi')
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   return { supabase, user, role: profile?.role ?? 'staff' }
@@ -138,12 +138,15 @@ export async function createPeminjamanBarang(formData: FormData): Promise<Action
 
     if (error) return { success: false, error: error.message }
 
-    // Notifikasi ke semua Sarana
-    const { data: saranas } = await supabase.from('profiles').select('id').eq('role', 'sarana').eq('is_active', true)
+    // Notifikasi ke semua Sarana dan Admin
+    const { data: penerima } = await supabase
+      .from('profiles').select('id')
+      .in('role', ['sarana', 'admin'])
+      .eq('is_active', true)
     await Promise.all(
-      (saranas ?? []).map(s =>
+      (penerima ?? []).map(p =>
         sendNotification({
-          user_id: s.id,
+          user_id: p.id,
           judul: 'Peminjaman Barang Baru',
           pesan: `Ada permintaan peminjaman ${jumlah} ${barang.satuan} ${barang.nama_barang}`,
           tipe: 'peminjaman_barang',
@@ -337,3 +340,4 @@ export async function konfirmasiPengembalian(
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
   }
 }
+

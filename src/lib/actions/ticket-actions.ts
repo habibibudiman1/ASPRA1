@@ -28,7 +28,8 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 
 async function getCurrentUserAndRole() {
   const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  const { data: { session }, error: authError } = await supabase.auth.getSession()
+  const user = session?.user
   if (authError || !user) throw new Error('Tidak terautentikasi')
 
   const { data: profile, error: profileError } = await supabase
@@ -51,7 +52,7 @@ export async function getTickets(
   perPage = DEFAULT_PAGE_SIZE
 ): Promise<PaginatedResult<TicketWithRelations>> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
   if (!user) throw new Error('Tidak terautentikasi')
 
   const { data: profile } = await supabase
@@ -248,7 +249,7 @@ export async function updateTicketStatus(
     // Ambil tiket saat ini
     const { data: ticket, error: fetchError } = await supabase
       .from('tickets')
-      .select('status, reporter_id, title, first_responded_at, sla_resolution_deadline')
+      .select('status, reporter_id, title, first_responded_at, sla_response_deadline, sla_resolution_deadline')
       .eq('id', ticketId)
       .single()
 
@@ -272,9 +273,9 @@ export async function updateTicketStatus(
 
     if (newStatus === 'in_progress' && !ticket.first_responded_at) {
       updateFields.first_responded_at = now
-      // Hitung apakah SLA response terpenuhi
-      if (ticket.sla_resolution_deadline) {
-        updateFields.sla_response_met = new Date(now) <= new Date(ticket.sla_resolution_deadline)
+      // Hitung apakah SLA response terpenuhi (gunakan sla_response_deadline, bukan resolution)
+      if (ticket.sla_response_deadline) {
+        updateFields.sla_response_met = new Date(now) <= new Date(ticket.sla_response_deadline)
       }
     }
     if (newStatus === 'resolved') {
@@ -462,3 +463,4 @@ export async function rateTicket(formData: FormData): Promise<ActionResult> {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
   }
 }
+

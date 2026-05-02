@@ -13,7 +13,7 @@ import {
   Building2, CalendarDays, CalendarPlus, ClipboardList,
   CheckSquare, Settings, LayoutGrid, Package, PackageCheck,
   ShoppingCart, ArrowLeftRight, ClipboardCheck, FileBarChart,
-  ArrowDownCircle, ArrowUpCircle, AlertTriangle, PackageX, Trash2, Wrench,
+  ArrowDownCircle, ArrowUpCircle, AlertTriangle, PackageX, Trash2, Wrench, Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -30,7 +30,7 @@ const ICON_MAP = {
   Building2, CalendarDays, CalendarPlus, ClipboardList,
   CheckSquare, Settings, LayoutGrid, Package, PackageCheck,
   ShoppingCart, ArrowLeftRight, ClipboardCheck, FileBarChart,
-  ArrowDownCircle, ArrowUpCircle, AlertTriangle, PackageX, Trash2, Wrench,
+  ArrowDownCircle, ArrowUpCircle, AlertTriangle, PackageX, Trash2, Wrench, Activity,
 }
 
 interface NavGroup {
@@ -71,6 +71,11 @@ export function Sidebar({ profile, collapsed, onToggle, mobile = false, onNaviga
   const isActive = (href: string) => {
     if (href === '/tickets/new') return pathname === href
     if (href === '/inventaris/peminjaman/baru') return pathname === href
+    // Drilldown lokasi dan nama dianggap sub-halaman dari Data Barang
+    if (href === '/inventaris/barang' && (
+      pathname.startsWith('/inventaris/lokasi') ||
+      pathname.startsWith('/inventaris/barang')
+    )) return true
     return pathname === href || (href !== '/' && pathname.startsWith(href + '/'))
   }
 

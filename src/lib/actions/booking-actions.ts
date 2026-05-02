@@ -16,7 +16,7 @@ import { sendNotification } from './notification-actions'
 
 async function requireAuth() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
   if (!user) throw new Error('Tidak terautentikasi')
   const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).single()
   return { supabase, user, role: profile?.role ?? 'staff', profile }
@@ -176,12 +176,15 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
 
     if (error) return { success: false, error: error.message }
 
-    // Notifikasi ke semua Sarana (mereka yang handle approval)
-    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'sarana').eq('is_active', true)
+    // Notifikasi ke semua Sarana dan Admin (mereka yang handle approval)
+    const { data: penerima } = await supabase
+      .from('profiles').select('id')
+      .in('role', ['sarana', 'admin'])
+      .eq('is_active', true)
     await Promise.all(
-      (admins ?? []).map(admin =>
+      (penerima ?? []).map(p =>
         sendNotification({
-          user_id: admin.id,
+          user_id: p.id,
           judul: 'Booking Ruangan Baru',
           pesan: `Ada booking baru untuk ruangan ${ruangan.nama_ruangan} pada ${tanggal} ${jamMulai}–${jamSelesai}`,
           tipe: 'booking_ruangan',
@@ -304,3 +307,4 @@ export async function cancelBooking(id: string, alasan?: string): Promise<Action
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
   }
 }
+

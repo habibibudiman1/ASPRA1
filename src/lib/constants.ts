@@ -337,6 +337,7 @@ export const IT_NAV_ITEMS = [
       { href: '/categories', label: 'Kategori',    icon: 'Tag' },
       { href: '/sla',        label: 'SLA',         icon: 'Timer' },
       { href: '/reports',    label: 'Laporan IT',  icon: 'BarChart3' },
+      { href: '/reports/activity', label: 'Audit Log', icon: 'Activity' },
     ],
   },
   {
@@ -377,6 +378,7 @@ export const ADMIN_NAV_ITEMS = [
       { href: '/users',      label: 'Pengguna',    icon: 'Users' },
       { href: '/sla',        label: 'SLA',         icon: 'Timer' },
       { href: '/reports',    label: 'Laporan IT',  icon: 'BarChart3' },
+      { href: '/reports/activity', label: 'Audit Log', icon: 'Activity' },
     ],
   },
   {

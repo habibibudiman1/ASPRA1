@@ -15,16 +15,16 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 
 async function requireAuth() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Tidak terautentikasi')
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  return { supabase, user, role: profile?.role ?? 'staff' }
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error('Tidak terautentikasi')
+  return { supabase, user: session.user }
 }
 
 async function requireAdmin() {
   const ctx = await requireAuth()
-  if (ctx.role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
-  return ctx
+  const { data: profile } = await ctx.supabase.from('profiles').select('role').eq('id', ctx.user.id).single()
+  if (profile?.role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
+  return { ...ctx, role: profile.role }
 }
 
 // =============================================================================
@@ -232,8 +232,7 @@ export async function getJadwalKalenderPublik(
   tanggalMulai: string,
   tanggalSelesai: string
 ): Promise<PeminjamanRuanganWithRelations[]> {
-  await requireAuth()
-
+  // middleware proxy.ts sudah melindungi route dashboard, jadi kita tidak perlu fetch user lagi
   const admin = await createAdminClient()
   const { data, error } = await admin
     .from('peminjaman_ruangan')
@@ -306,34 +305,31 @@ export async function getDashboardRuangan(): Promise<DashboardRuanganStats & { r
     .eq('tanggal', today).eq('status', 'disetujui')
     .lte('jam_mulai', nowTime).gte('jam_selesai', nowTime)
 
-  // Ruangan dengan status realtime
-  const { data: semuaRuangan } = await supabase
-    .from('ruangan').select('*').eq('is_deleted', false).order('nama_ruangan')
+  // Ruangan dengan status realtime — 2 bulk queries menggantikan N*2 queries
+  const [{ data: semuaRuangan }, { data: allAktif }, { data: allBerikutnya }] = await Promise.all([
+    supabase.from('ruangan').select('*').eq('is_deleted', false).order('nama_ruangan'),
+    supabase
+      .from('peminjaman_ruangan')
+      .select('*, user:user_id(full_name), ruangan(*)')
+      .eq('tanggal', today).eq('status', 'disetujui')
+      .lte('jam_mulai', nowTime).gte('jam_selesai', nowTime),
+    supabase
+      .from('peminjaman_ruangan')
+      .select('*, user:user_id(full_name), ruangan(*)')
+      .eq('tanggal', today).in('status', ['menunggu', 'disetujui'])
+      .gt('jam_mulai', nowTime)
+      .order('jam_mulai', { ascending: true }),
+  ])
 
-  const ruanganStatus: RuanganStatusRealtime[] = await Promise.all(
-    (semuaRuangan ?? []).map(async (r) => {
-      const { data: aktif } = await supabase
-        .from('peminjaman_ruangan')
-        .select('*, user:user_id(full_name), ruangan(*)')
-        .eq('ruangan_id', r.id).eq('tanggal', today).eq('status', 'disetujui')
-        .lte('jam_mulai', nowTime).gte('jam_selesai', nowTime)
-        .limit(1).single()
-
-      const { data: berikutnya } = await supabase
-        .from('peminjaman_ruangan')
-        .select('*, user:user_id(full_name), ruangan(*)')
-        .eq('ruangan_id', r.id).eq('tanggal', today).in('status', ['menunggu', 'disetujui'])
-        .gt('jam_mulai', nowTime)
-        .order('jam_mulai', { ascending: true })
-        .limit(1).single()
-
-      return {
-        ruangan: r as Ruangan,
-        booking_aktif: aktif as PeminjamanRuanganWithRelations | null,
-        booking_berikutnya: berikutnya as PeminjamanRuanganWithRelations | null,
-      }
-    })
-  )
+  const ruanganStatus: RuanganStatusRealtime[] = (semuaRuangan ?? []).map((r) => {
+    const aktif = (allAktif ?? []).find(b => b.ruangan_id === r.id) ?? null
+    const berikutnya = (allBerikutnya ?? []).find(b => b.ruangan_id === r.id) ?? null
+    return {
+      ruangan: r as Ruangan,
+      booking_aktif: aktif as PeminjamanRuanganWithRelations | null,
+      booking_berikutnya: berikutnya as PeminjamanRuanganWithRelations | null,
+    }
+  })
 
   return {
     total_ruangan: totalRuangan ?? 0,

@@ -46,6 +46,9 @@ const PAGE_TITLES: Record<string, string> = {
   '/inventaris/mutasi/baru': 'Tambah Mutasi',
   '/inventaris/stock-opname': 'Stock Opname',
   '/inventaris/laporan': 'Laporan Inventaris',
+  '/notifications': 'Pusat Notifikasi',
+  '/inventaris/lokasi': 'Lokasi Barang',
+  '/inventaris/barang/nama': 'Detail Nama Barang',
 }
 
 interface TopbarProps {

@@ -16,13 +16,13 @@ import { DEFAULT_PAGE_SIZE, STOK_RENDAH_THRESHOLD } from '@/lib/constants'
 
 async function requireSaranaOrAdmin() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Tidak terautentikasi')
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error('Tidak terautentikasi')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
   if (!['sarana', 'admin'].includes(profile?.role ?? '')) {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }
-  return { supabase, user, role: profile!.role }
+  return { supabase, user: session.user, role: profile!.role }
 }
 
 async function requireSarana() {
@@ -66,6 +66,213 @@ export async function getInventaris(
     pagination: { page, per_page, total: count ?? 0, total_pages: Math.ceil((count ?? 0) / per_page) },
   }
 }
+
+// =============================================================================
+// GROUP BY NAMA BARANG
+// Mengelompokkan inventaris berdasarkan nama_barang
+// =============================================================================
+
+export interface InventarisGroupedByNama {
+  nama_barang: string
+  kategori: InventarisKategori
+  total_jenis: number      // baris dengan nama yang sama
+  total_unit: number       // jumlah stok gabungan
+  kondisi_utama: InventarisKondisi  // kondisi terbanyak
+  lokasi_list: string[]    // daftar lokasi unik
+}
+
+export async function getInventarisGroupedByNama(
+  filters?: { search?: string; kategori?: InventarisKategori | 'all'; lokasi?: string; kondisi?: string }
+): Promise<InventarisGroupedByNama[]> {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('inventaris')
+    .select('nama_barang, kategori, jumlah_stok, kondisi, lokasi_penempatan')
+    .eq('is_deleted', false)
+    .order('nama_barang', { ascending: true })
+
+  if (filters?.search) {
+    query = query.ilike('nama_barang', `%${filters.search}%`)
+  }
+  if (filters?.kategori && filters.kategori !== 'all') {
+    query = query.eq('kategori', filters.kategori)
+  }
+  if (filters?.lokasi) {
+    query = query.eq('lokasi_penempatan', filters.lokasi)
+  }
+  if (filters?.kondisi && filters.kondisi !== 'all') {
+    query = query.eq('kondisi', filters.kondisi)
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  // Group di sisi aplikasi
+  const groupMap = new Map<string, {
+    kategori: InventarisKategori
+    total_unit: number
+    total_jenis: number
+    kondisiCount: Map<string, number>
+    lokasi_set: Set<string>
+  }>()
+
+  for (const row of data ?? []) {
+    const key = row.nama_barang
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        kategori: row.kategori as InventarisKategori,
+        total_unit: 0,
+        total_jenis: 0,
+        kondisiCount: new Map(),
+        lokasi_set: new Set(),
+      })
+    }
+    const g = groupMap.get(key)!
+    g.total_unit += row.jumlah_stok
+    g.total_jenis += 1
+    g.kondisiCount.set(row.kondisi, (g.kondisiCount.get(row.kondisi) ?? 0) + 1)
+    g.lokasi_set.add(row.lokasi_penempatan)
+  }
+
+  return Array.from(groupMap.entries()).map(([nama, g]) => {
+    let kondisi_utama: InventarisKondisi = 'baik'
+    let maxCount = 0
+    for (const [k, c] of g.kondisiCount.entries()) {
+      if (c > maxCount) { maxCount = c; kondisi_utama = k as InventarisKondisi }
+    }
+    return {
+      nama_barang: nama,
+      kategori: g.kategori,
+      total_jenis: g.total_jenis,
+      total_unit: g.total_unit,
+      kondisi_utama,
+      lokasi_list: Array.from(g.lokasi_set).slice(0, 3),
+    }
+  })
+}
+
+// =============================================================================
+// GET BY NAMA — Semua baris dengan nama_barang tertentu (untuk drilldown)
+// =============================================================================
+
+export async function getInventarisByNama(
+  nama: string,
+  page = 1,
+  per_page = DEFAULT_PAGE_SIZE,
+  lokasi?: string
+): Promise<PaginatedResult<Inventaris>> {
+  const supabase = await createClient()
+  const from = (page - 1) * per_page
+  const to = from + per_page - 1
+
+  let query = supabase
+    .from('inventaris')
+    .select('*', { count: 'exact' })
+    .eq('is_deleted', false)
+    .ilike('nama_barang', nama)
+
+  if (lokasi) {
+    query = query.eq('lokasi_penempatan', lokasi)
+  }
+
+  const { data, count, error } = await query
+    .order('lokasi_penempatan', { ascending: true })
+    .range(from, to)
+
+  if (error) throw new Error(error.message)
+  return {
+    data: (data ?? []) as Inventaris[],
+    pagination: { page, per_page, total: count ?? 0, total_pages: Math.ceil((count ?? 0) / per_page) },
+  }
+}
+
+// =============================================================================
+// GROUP BY LOKASI
+// Mengelompokkan inventaris berdasarkan lokasi_penempatan
+// =============================================================================
+
+export interface InventarisGroupedByLokasi {
+  lokasi: string
+  total_jenis: number
+  total_unit: number
+  kategori_list: InventarisKategori[]
+}
+
+export async function getInventarisGroupedByLokasi(
+  filters?: { search?: string }
+): Promise<InventarisGroupedByLokasi[]> {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('inventaris')
+    .select('lokasi_penempatan, kategori, jumlah_stok')
+    .eq('is_deleted', false)
+    .order('lokasi_penempatan', { ascending: true })
+
+  if (filters?.search) {
+    query = query.ilike('lokasi_penempatan', `%${filters.search}%`)
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  const lokasiMap = new Map<string, {
+    total_jenis: number
+    total_unit: number
+    kategori_set: Set<InventarisKategori>
+  }>()
+
+  for (const row of data ?? []) {
+    const key = row.lokasi_penempatan
+    if (!lokasiMap.has(key)) {
+      lokasiMap.set(key, { total_jenis: 0, total_unit: 0, kategori_set: new Set() })
+    }
+    const g = lokasiMap.get(key)!
+    g.total_jenis += 1
+    g.total_unit += row.jumlah_stok
+    g.kategori_set.add(row.kategori as InventarisKategori)
+  }
+
+  return Array.from(lokasiMap.entries())
+    .map(([lokasi, g]) => ({
+      lokasi,
+      total_jenis: g.total_jenis,
+      total_unit: g.total_unit,
+      kategori_list: Array.from(g.kategori_set),
+    }))
+    .sort((a, b) => a.lokasi.localeCompare(b.lokasi, 'id'))
+}
+
+// =============================================================================
+// GET BY LOKASI — Semua barang di satu lokasi (untuk drilldown)
+// =============================================================================
+
+export async function getInventarisByLokasi(
+  lokasi: string,
+  page = 1,
+  per_page = DEFAULT_PAGE_SIZE
+): Promise<PaginatedResult<Inventaris>> {
+  const supabase = await createClient()
+  const from = (page - 1) * per_page
+  const to = from + per_page - 1
+
+  const { data, count, error } = await supabase
+    .from('inventaris')
+    .select('*', { count: 'exact' })
+    .eq('is_deleted', false)
+    .eq('lokasi_penempatan', lokasi)
+    .order('nama_barang', { ascending: true })
+    .range(from, to)
+
+  if (error) throw new Error(error.message)
+  return {
+    data: (data ?? []) as Inventaris[],
+    pagination: { page, per_page, total: count ?? 0, total_pages: Math.ceil((count ?? 0) / per_page) },
+  }
+}
+
+
 
 export async function getInventarisById(id: string): Promise<Inventaris | null> {
   const supabase = await createClient()
@@ -112,7 +319,7 @@ export async function generateKodeBarang(kategori: string): Promise<string> {
 
 export async function createInventaris(formData: FormData): Promise<ActionResult<Inventaris>> {
   try {
-    await requireSarana()
+    await requireSaranaOrAdmin()
     const supabase = await createClient()
     const kategori = formData.get('kategori') as string
 
@@ -157,7 +364,7 @@ export async function createInventaris(formData: FormData): Promise<ActionResult
 
 export async function updateInventaris(formData: FormData): Promise<ActionResult> {
   try {
-    await requireSarana()
+    await requireSaranaOrAdmin()
     const supabase = await createClient()
     const id = formData.get('id') as string
 
@@ -194,7 +401,7 @@ export async function updateInventaris(formData: FormData): Promise<ActionResult
 
 export async function deleteInventaris(id: string): Promise<ActionResult> {
   try {
-    await requireSarana()
+    await requireSaranaOrAdmin()
     const supabase = await createClient()
 
     // Cek peminjaman aktif
@@ -231,8 +438,11 @@ export async function getDashboardInventaris(): Promise<
 > {
   const supabase = await createClient()
 
+  // Hanya ambil kolom yang dibutuhkan untuk kalkulasi dashboard (bukan catatan/foto dll)
   const { data: items } = await supabase
-    .from('inventaris').select('*').eq('is_deleted', false)
+    .from('inventaris')
+    .select('id, nama_barang, kode_barang, kategori, kondisi, jumlah_stok, nilai_perolehan, lokasi_penempatan, satuan, merk, tipe_model')
+    .eq('is_deleted', false)
 
   const totalJenis = items?.length ?? 0
   const totalUnit = items?.reduce((sum, i) => sum + i.jumlah_stok, 0) ?? 0
