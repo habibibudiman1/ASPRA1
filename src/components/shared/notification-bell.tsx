@@ -161,6 +161,17 @@ export function NotificationBell() {
             </div>
           )}
         </ScrollArea>
+
+        {/* Footer link ke halaman notifikasi */}
+        <div className="px-4 py-2 border-t">
+          <a
+            href="/notifications"
+            className="text-xs text-primary hover:underline font-medium block text-center"
+            onClick={() => setOpen(false)}
+          >
+            Lihat semua notifikasi
+          </a>
+        </div>
       </PopoverContent>
     </Popover>
   )

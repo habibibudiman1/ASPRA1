@@ -181,7 +181,10 @@ export default function LoginPage() {
       </Form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Lupa password? Hubungi IT Admin untuk reset akun.
+        <a href="/lupa-password" className="text-primary hover:underline font-medium">
+          Lupa password?
+        </a>
+        {' '}Atau hubungi IT Admin jika akun bermasalah.
       </p>
     </div>
   );

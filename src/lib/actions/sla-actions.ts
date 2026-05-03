@@ -22,7 +22,7 @@ export async function updateSLAPolicy(
 ): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     if (!['it_admin', 'admin'].includes(profile?.role ?? '')) return { success: false, error: 'Hanya IT atau Admin yang bisa mengubah SLA' }
@@ -49,3 +49,4 @@ export async function updateSLAPolicy(
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
   }
 }
+

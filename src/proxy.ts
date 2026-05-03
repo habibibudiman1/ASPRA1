@@ -24,14 +24,18 @@ const IT_ADMIN_ROUTES = [
 // Route yang hanya bisa diakses Sarana
 const SARANA_ONLY_ROUTES = [
   '/ruangan/approval',
-  '/inventaris/barang/baru',
-  '/inventaris/barang/edit',
   '/inventaris/mutasi/baru',
   '/inventaris/stock-opname',
 ]
 
+// Route yang bisa diakses Sarana atau Admin
+const SARANA_OR_ADMIN_ROUTES = [
+  '/inventaris/barang/baru',
+  '/inventaris/barang/edit',
+]
+
 // Route publik — tidak perlu login
-const PUBLIC_ROUTES = ['/login', '/auth/callback']
+const PUBLIC_ROUTES = ['/login', '/auth/callback', '/lupa-password', '/reset-password']
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -59,7 +63,8 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   const { pathname } = request.nextUrl
 
   // Public routes — boleh akses tanpa login
@@ -113,6 +118,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
   }
 
+  // Check sarana-or-admin routes
+  const isSaranaOrAdminRoute = SARANA_OR_ADMIN_ROUTES.some(r => pathname.startsWith(r))
+  if (isSaranaOrAdminRoute && role !== 'sarana' && role !== 'admin') {
+    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+  }
+
   // Redirect root ke halaman default sesuai role
   if (pathname === '/') {
     return NextResponse.redirect(
@@ -139,3 +150,6 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+
+export default proxy
+

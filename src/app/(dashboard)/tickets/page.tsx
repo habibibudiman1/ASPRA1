@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/actions/user-actions'
 import { getCategories } from '@/lib/actions/category-actions'
 import { buttonVariants } from '@/components/ui/button'
 import { TicketsClient } from '@/components/tickets/tickets-client'
+import { ExportPDFButton } from '@/components/shared/export-pdf-button'
 import { cn } from '@/lib/utils'
 import type { Metadata } from 'next'
 
@@ -53,10 +54,15 @@ export default async function TicketsPage({ searchParams }: PageProps) {
               : 'Pantau status tiket yang Anda buat'}
           </p>
         </div>
-        <Link href="/tickets/new" id="btn-buat-tiket" className={cn(buttonVariants({ variant: 'default' }), 'inline-flex items-center flex-shrink-0')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Buat Tiket
-        </Link>
+        <div className="flex gap-2 items-center flex-shrink-0">
+          {(profile?.role === 'it_admin' || profile?.role === 'admin') && (
+            <ExportPDFButton type="tickets" filters={{ status: params.status, priority: params.priority, category_id: params.category_id, search: params.search }} />
+          )}
+          <Link href="/tickets/new" id="btn-buat-tiket" className={cn(buttonVariants({ variant: 'default' }), 'inline-flex items-center flex-shrink-0')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Buat Tiket
+          </Link>
+        </div>
       </div>
 
       {/* Ticket List Client Component */}

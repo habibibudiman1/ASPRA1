@@ -76,9 +76,11 @@ export default function JadwalRuanganPage() {
     })
   }, [loadEvents, startTransition])
 
-  // Auto-refresh setiap 30 detik
+  // Auto-refresh setiap 30 detik, hanya ketika tab terlihat (hemat bandwidth)
   useEffect(() => {
-    const interval = setInterval(loadEvents, 30000)
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') void loadEvents()
+    }, 30000)
     return () => clearInterval(interval)
   }, [loadEvents])
 
