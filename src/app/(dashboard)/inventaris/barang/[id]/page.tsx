@@ -40,6 +40,30 @@ export default async function DetailBarangPage({ params }: Props) {
   const kat = INVENTARIS_KATEGORI[item.kategori]
   const kon = INVENTARIS_KONDISI[item.kondisi]
 
+  function parsePCComponents(merk: string | null, tipe_model: string | null) {
+    const raw = `${merk ?? ''} ${tipe_model ?? ''}`.trim()
+    if (!raw) return null
+    try {
+      const parsed = JSON.parse(tipe_model || '{}')
+      if (Object.keys(parsed).length > 0) return parsed
+    } catch {}
+    const parts = raw.split('_')
+    if (parts.length <= 1) return { raw }
+    const comp: any = {}
+    parts.forEach((p, i) => {
+      if (p.includes('Procesor:')) comp.Processor = p.split(':')[1]
+      else if (p.includes('MB:')) comp.Motherboard = p.split(':')[1]
+      else if (p.includes('RAM:')) comp.RAM = p.split(':')[1]
+      else if (p.includes('HDD:') || p.includes('SSD:')) comp.Storage = p.split(':')[1]
+      else if (p.toLowerCase().includes('windows') || p.toLowerCase().includes('linux')) comp.OS = p
+      else if (p.toLowerCase().includes('pak') || p.toLowerCase().includes('bu ') || i === parts.length - 1) comp.Pengguna = p
+      else comp.Lainnya = (comp.Lainnya ? comp.Lainnya + ' ' : '') + p
+    })
+    return comp
+  }
+
+  const isPC = item.nama_barang.toLowerCase().includes('pc')
+
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -63,7 +87,23 @@ export default async function DetailBarangPage({ params }: Props) {
             <Row label="Kategori">
               <Badge style={{ background: kat?.color + '20', color: kat?.color, border: 'none' }}>{kat?.label ?? item.kategori}</Badge>
             </Row>
-            <Row label="Merk / Model">{item.merk ? `${item.merk} ${item.tipe_model ?? ''}`.trim() : '—'}</Row>
+            {isPC ? (
+              <Row label="Spesifikasi Komponen">
+                <div className="text-right space-y-1">
+                  {(() => {
+                    const parsed = parsePCComponents(item.merk, item.tipe_model)
+                    if (parsed && !parsed.raw) {
+                      return Object.entries(parsed).map(([k, v]) => v ? (
+                        <div key={k} className="text-sm"><span className="text-muted-foreground mr-1">{k}:</span> {v as string}</div>
+                      ) : null)
+                    }
+                    return <div>{item.merk ? `${item.merk} ${item.tipe_model ?? ''}`.trim() : '—'}</div>
+                  })()}
+                </div>
+              </Row>
+            ) : (
+              <Row label="Merk / Model">{item.merk ? `${item.merk} ${item.tipe_model ?? ''}`.trim() : '—'}</Row>
+            )}
             <Row label="Lokasi">{item.lokasi_penempatan}</Row>
             <Row label="Kondisi">
               <Badge style={{ background: kon?.bgColor, color: kon?.color, border: 'none' }}>{kon?.label ?? item.kondisi}</Badge>

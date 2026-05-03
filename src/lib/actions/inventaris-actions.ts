@@ -82,6 +82,23 @@ export async function getInventarisList(): Promise<Inventaris[]> {
   return (data ?? []) as Inventaris[]
 }
 
+export async function getInventarisLokasi(): Promise<string[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('inventaris')
+    .select('lokasi_penempatan')
+    .eq('is_deleted', false)
+  
+  if (!data) return []
+  const uniqueLokasi = new Set<string>()
+  for (const item of data) {
+    if (item.lokasi_penempatan) {
+      uniqueLokasi.add(item.lokasi_penempatan)
+    }
+  }
+  return Array.from(uniqueLokasi).sort()
+}
+
 export async function generateKodeBarang(kategori: string): Promise<string> {
   const supabase = await createClient()
   const prefixMap: Record<string, string> = {
@@ -231,8 +248,24 @@ export async function getDashboardInventaris(): Promise<
 > {
   const supabase = await createClient()
 
-  const { data: items } = await supabase
-    .from('inventaris').select('*').eq('is_deleted', false)
+  const items: any[] = []
+  let page = 0
+  let hasMore = true
+  while (hasMore) {
+    const { data } = await supabase
+      .from('inventaris')
+      .select('*')
+      .eq('is_deleted', false)
+      .range(page * 1000, (page + 1) * 1000 - 1)
+    
+    if (data && data.length > 0) {
+      items.push(...data)
+      if (data.length < 1000) hasMore = false
+    } else {
+      hasMore = false
+    }
+    page++
+  }
 
   const totalJenis = items?.length ?? 0
   const totalUnit = items?.reduce((sum, i) => sum + i.jumlah_stok, 0) ?? 0

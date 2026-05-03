@@ -21,9 +21,9 @@ async function requireAuth() {
   return { supabase, user, role: profile?.role ?? 'staff' }
 }
 
-async function requireAdmin() {
+async function requireSaranaOnly() {
   const ctx = await requireAuth()
-  if (ctx.role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
+  if (ctx.role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
   return ctx
 }
 
@@ -104,7 +104,7 @@ export async function getRuanganList(): Promise<Ruangan[]> {
 
 export async function createRuangan(formData: FormData): Promise<ActionResult<Ruangan>> {
   try {
-    await requireAdmin()
+    await requireSaranaOnly()
     const supabase = await createClient()
 
     const fasilitas = formData.get('fasilitas')
@@ -138,7 +138,7 @@ export async function createRuangan(formData: FormData): Promise<ActionResult<Ru
 
 export async function updateRuangan(formData: FormData): Promise<ActionResult> {
   try {
-    await requireAdmin()
+    await requireSaranaOnly()
     const supabase = await createClient()
     const id = formData.get('id') as string
 
@@ -169,7 +169,7 @@ export async function updateRuangan(formData: FormData): Promise<ActionResult> {
 
 export async function deleteRuangan(id: string): Promise<ActionResult> {
   try {
-    await requireAdmin()
+    await requireSaranaOnly()
     const supabase = await createClient()
 
     // Cek apakah ada booking aktif

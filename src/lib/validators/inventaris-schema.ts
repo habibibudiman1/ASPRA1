@@ -14,7 +14,7 @@ export const createInventarisFormSchema = z.object({
   nama_barang: z.string().min(2, 'Nama barang minimal 2 karakter').max(200).trim(),
   kategori: z.enum(KATEGORI_LIST, { error: 'Pilih kategori yang valid' }),
   merk: z.string().max(100).trim().optional(),
-  tipe_model: z.string().max(100).trim().optional(),
+  tipe_model: z.string().max(500).trim().optional(),
   jumlah_stok: z.number().int().min(0, 'Stok tidak boleh negatif'),
   satuan: z.string().min(1, 'Satuan wajib diisi').max(50).trim(),
   kondisi: z.enum(KONDISI_LIST),

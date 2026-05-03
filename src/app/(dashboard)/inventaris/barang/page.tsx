@@ -5,8 +5,8 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Package, Plus, Search } from 'lucide-react'
-import { getInventaris } from '@/lib/actions/inventaris-actions'
+import { Package, Plus, Search, MapPin, ChevronDown } from 'lucide-react'
+import { getInventaris, getInventarisLokasi } from '@/lib/actions/inventaris-actions'
 import { getCurrentUser } from '@/lib/actions/user-actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: 'Data Barang | ASPRA' }
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  searchParams: Promise<{ page?: string; search?: string; kategori?: string; kondisi?: string }>
+  searchParams: Promise<{ page?: string; search?: string; kategori?: string; kondisi?: string; lokasi?: string }>
 }
 
 export default async function DataBarangPage({ searchParams }: Props) {
@@ -28,11 +28,15 @@ export default async function DataBarangPage({ searchParams }: Props) {
   const isSarana = profile?.role === 'sarana'
   const page = Number(params.page ?? 1)
 
-  const { data: items, pagination } = await getInventaris(
-    { search: params.search, kategori: params.kategori as never, kondisi: params.kondisi as never },
-    page,
-    20
-  )
+  const [inventarisResult, lokasiList] = await Promise.all([
+    getInventaris(
+      { search: params.search, kategori: params.kategori as never, kondisi: params.kondisi as never, lokasi: params.lokasi },
+      page,
+      20
+    ),
+    getInventarisLokasi()
+  ])
+  const { data: items, pagination } = inventarisResult
 
   return (
     <div className="p-6 space-y-5">
@@ -51,13 +55,27 @@ export default async function DataBarangPage({ searchParams }: Props) {
 
       {/* Filter Row */}
       <div className="flex gap-2 flex-wrap items-center">
-        <form method="GET" className="flex gap-2 flex-1 min-w-[200px]">
-          <div className="relative flex-1 max-w-xs">
+        <form method="GET" className="flex gap-2 flex-1 min-w-[200px] flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input name="search" placeholder="Cari nama atau kode barang..." defaultValue={params.search} className="pl-9" />
           </div>
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
+            <select
+              name="lokasi"
+              defaultValue={params.lokasi ?? ''}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-9 pr-8 appearance-none"
+            >
+              <option value="">Semua Lokasi</option>
+              {lokasiList.map((lok) => (
+                <option key={lok} value={lok}>{lok}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
           <Button type="submit" variant="outline" size="sm">Cari</Button>
-          {params.search && <Button variant="ghost" size="sm" asChild><Link href="/inventaris/barang">Reset</Link></Button>}
+          {(params.search || params.lokasi) && <Button variant="ghost" size="sm" asChild><Link href="/inventaris/barang">Reset</Link></Button>}
         </form>
       </div>
 
@@ -108,7 +126,20 @@ export default async function DataBarangPage({ searchParams }: Props) {
                       <td className="px-4 py-3">
                         <div>
                           <p className="font-medium">{item.nama_barang}</p>
-                          {item.merk && <p className="text-xs text-muted-foreground">{item.merk} {item.tipe_model}</p>}
+                          {(() => {
+                            if (!item.merk && !item.tipe_model) return null;
+                            if (item.nama_barang.toLowerCase().includes('pc')) {
+                              try {
+                                const parsed = JSON.parse(item.tipe_model || '{}');
+                                const summary = [parsed.Processor, parsed.RAM, parsed.Storage].filter(Boolean).join(' / ');
+                                const pengguna = parsed.Pengguna ? `(${parsed.Pengguna})` : '';
+                                return <p className="text-xs text-muted-foreground">{item.merk} {summary ? `- ${summary}` : ''} {pengguna}</p>;
+                              } catch {
+                                return <p className="text-xs text-muted-foreground">{item.merk} (Komponen PC)</p>;
+                              }
+                            }
+                            return <p className="text-xs text-muted-foreground">{item.merk} {item.tipe_model}</p>;
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -160,12 +191,12 @@ export default async function DataBarangPage({ searchParams }: Props) {
           <div className="flex gap-2">
             {pagination.page > 1 && (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/inventaris/barang?page=${pagination.page - 1}&search=${params.search ?? ''}&kategori=${params.kategori ?? ''}`}>‹ Sebelumnya</Link>
+                <Link href={`/inventaris/barang?page=${pagination.page - 1}&search=${params.search ?? ''}&kategori=${params.kategori ?? ''}&lokasi=${params.lokasi ?? ''}`}>‹ Sebelumnya</Link>
               </Button>
             )}
             {pagination.page < pagination.total_pages && (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/inventaris/barang?page=${pagination.page + 1}&search=${params.search ?? ''}&kategori=${params.kategori ?? ''}`}>Berikutnya ›</Link>
+                <Link href={`/inventaris/barang?page=${pagination.page + 1}&search=${params.search ?? ''}&kategori=${params.kategori ?? ''}&lokasi=${params.lokasi ?? ''}`}>Berikutnya ›</Link>
               </Button>
             )}
           </div>

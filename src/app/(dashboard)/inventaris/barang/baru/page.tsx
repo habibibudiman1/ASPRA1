@@ -26,6 +26,7 @@ export default function TambahBarangPage() {
   const [isPending, startTransition] = useTransition()
   const [kodePreview, setKodePreview] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [pcComponents, setPcComponents] = useState({ os: '', processor: '', mb: '', ram: '', storage: '', pengguna: '', lainnya: '' })
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CreateInventarisSchema>({
     resolver: zodResolver(createInventarisSchema),
@@ -33,6 +34,8 @@ export default function TambahBarangPage() {
   })
 
   const kategoriWatch = watch('kategori')
+  const namaBarangWatch = watch('nama_barang') || ''
+  const isPC = namaBarangWatch.toLowerCase().includes('pc')
 
   const handleGenerateKode = async () => {
     if (!kategoriWatch) { toast.error('Pilih kategori terlebih dahulu'); return }
@@ -46,8 +49,21 @@ export default function TambahBarangPage() {
     startTransition(async () => {
       const formData = new FormData()
       Object.entries(data).forEach(([k, v]) => {
+        if (isPC && (k === 'merk' || k === 'tipe_model')) return // Skip
         if (v !== undefined && v !== null) formData.append(k, String(v))
       })
+      if (isPC) {
+        formData.append('tipe_model', JSON.stringify({
+          OS: pcComponents.os,
+          Processor: pcComponents.processor,
+          Motherboard: pcComponents.mb,
+          RAM: pcComponents.ram,
+          Storage: pcComponents.storage,
+          Pengguna: pcComponents.pengguna,
+          Lainnya: pcComponents.lainnya
+        }))
+        formData.append('merk', 'PC Rakitan')
+      }
       const result = await createInventaris(formData)
       if (result.success) {
         toast.success(`Barang "${data.nama_barang}" berhasil ditambahkan!`)
@@ -110,16 +126,31 @@ export default function TambahBarangPage() {
               {errors.nama_barang && <p className="text-xs text-destructive">{errors.nama_barang.message}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="merk">Merk / Brand</Label>
-                <Input id="merk" placeholder="contoh: Lenovo" {...register('merk')} />
+            {isPC ? (
+              <div className="space-y-4 col-span-2 mt-4 p-4 border rounded-md bg-muted/20">
+                <h4 className="text-sm font-medium">Spesifikasi Komponen PC</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>OS</Label><Input value={pcComponents.os} onChange={e => setPcComponents({...pcComponents, os: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Processor</Label><Input value={pcComponents.processor} onChange={e => setPcComponents({...pcComponents, processor: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Motherboard</Label><Input value={pcComponents.mb} onChange={e => setPcComponents({...pcComponents, mb: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>RAM</Label><Input value={pcComponents.ram} onChange={e => setPcComponents({...pcComponents, ram: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Storage (HDD/SSD)</Label><Input value={pcComponents.storage} onChange={e => setPcComponents({...pcComponents, storage: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Pengguna / Pemakai</Label><Input value={pcComponents.pengguna} onChange={e => setPcComponents({...pcComponents, pengguna: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Lainnya / Serial</Label><Input value={pcComponents.lainnya} onChange={e => setPcComponents({...pcComponents, lainnya: e.target.value})} /></div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="tipe_model">Tipe / Model</Label>
-                <Input id="tipe_model" placeholder="contoh: IdeaPad 3 15ITL6" {...register('tipe_model')} />
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="merk">Merk / Brand</Label>
+                  <Input id="merk" placeholder="contoh: Lenovo" {...register('merk')} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tipe_model">Tipe / Model</Label>
+                  <Input id="tipe_model" placeholder="contoh: IdeaPad 3 15ITL6" {...register('tipe_model')} />
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 

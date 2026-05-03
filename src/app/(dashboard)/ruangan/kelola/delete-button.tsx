@@ -30,11 +30,13 @@ export function DeleteRuanganButton({ id, nama }: { id: string; nama: string }) 
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger render={
-        <Button size="sm" variant="outline" className="text-destructive hover:bg-destructive/10">
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      } />
+      <AlertDialogTrigger
+        render={
+          <Button size="sm" variant="outline" className="text-destructive hover:bg-destructive/10">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        }
+      />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Hapus Ruangan?</AlertDialogTitle>

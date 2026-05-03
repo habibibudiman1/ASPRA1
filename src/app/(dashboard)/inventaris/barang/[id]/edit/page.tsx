@@ -31,6 +31,7 @@ export default function EditBarangPage({ params }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isLoading, setIsLoading] = useState(true)
   const [barang, setBarang] = useState<Inventaris | null>(null)
+  const [pcComponents, setPcComponents] = useState({ os: '', processor: '', mb: '', ram: '', storage: '', pengguna: '', lainnya: '' })
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<UpdateInventarisSchema>({
     resolver: zodResolver(updateInventarisSchema),
@@ -55,6 +56,26 @@ export default function EditBarangPage({ params }: Props) {
           nilai_perolehan: data.nilai_perolehan ?? undefined,
           catatan: data.catatan ?? undefined,
         })
+        if (data.nama_barang.toLowerCase().includes('pc')) {
+          try {
+            const parsed = JSON.parse(data.tipe_model || '{}')
+            setPcComponents(prev => ({ ...prev, ...parsed }))
+          } catch {
+            const raw = `${data.merk ?? ''} ${data.tipe_model ?? ''}`.trim()
+            const parts = raw.split('_')
+            const comp: any = {}
+            parts.forEach((p, i) => {
+              if (p.includes('Procesor:')) comp.processor = p.split(':')[1]
+              else if (p.includes('MB:')) comp.mb = p.split(':')[1]
+              else if (p.includes('RAM:')) comp.ram = p.split(':')[1]
+              else if (p.includes('HDD:') || p.includes('SSD:')) comp.storage = p.split(':')[1]
+              else if (p.toLowerCase().includes('windows') || p.toLowerCase().includes('linux')) comp.os = p
+              else if (p.toLowerCase().includes('pak') || p.toLowerCase().includes('bu ') || i === parts.length - 1) comp.pengguna = p
+              else comp.lainnya = (comp.lainnya ? comp.lainnya + ' ' : '') + p
+            })
+            setPcComponents(prev => ({ ...prev, ...comp }))
+          }
+        }
       }
       setIsLoading(false)
     })
@@ -63,9 +84,23 @@ export default function EditBarangPage({ params }: Props) {
   const onSubmit = (data: UpdateInventarisSchema) => {
     startTransition(async () => {
       const formData = new FormData()
+      const isPC = barang?.nama_barang.toLowerCase().includes('pc')
       Object.entries(data).forEach(([k, v]) => {
+        if (isPC && (k === 'merk' || k === 'tipe_model')) return // Skip, we will set it manually
         if (v !== undefined && v !== null) formData.append(k, String(v))
       })
+      if (isPC) {
+        formData.append('tipe_model', JSON.stringify({
+          OS: pcComponents.os,
+          Processor: pcComponents.processor,
+          Motherboard: pcComponents.mb,
+          RAM: pcComponents.ram,
+          Storage: pcComponents.storage,
+          Pengguna: pcComponents.pengguna,
+          Lainnya: pcComponents.lainnya
+        }))
+        formData.append('merk', 'PC Rakitan')
+      }
       const result = await updateInventaris(formData)
       if (result.success) {
         toast.success('Barang berhasil diperbarui!')
@@ -109,10 +144,25 @@ export default function EditBarangPage({ params }: Props) {
               <Input {...register('nama_barang')} />
               {errors.nama_barang && <p className="text-xs text-destructive">{errors.nama_barang.message}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Merk</Label><Input {...register('merk')} /></div>
-              <div className="space-y-2"><Label>Tipe/Model</Label><Input {...register('tipe_model')} /></div>
-            </div>
+            {barang.nama_barang.toLowerCase().includes('pc') ? (
+              <div className="space-y-4 col-span-2 mt-4 p-4 border rounded-md bg-muted/20">
+                <h4 className="text-sm font-medium">Spesifikasi Komponen PC</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>OS</Label><Input value={pcComponents.os} onChange={e => setPcComponents({...pcComponents, os: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Processor</Label><Input value={pcComponents.processor} onChange={e => setPcComponents({...pcComponents, processor: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Motherboard</Label><Input value={pcComponents.mb} onChange={e => setPcComponents({...pcComponents, mb: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>RAM</Label><Input value={pcComponents.ram} onChange={e => setPcComponents({...pcComponents, ram: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Storage (HDD/SSD)</Label><Input value={pcComponents.storage} onChange={e => setPcComponents({...pcComponents, storage: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Pengguna / Pemakai</Label><Input value={pcComponents.pengguna} onChange={e => setPcComponents({...pcComponents, pengguna: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Lainnya / Serial</Label><Input value={pcComponents.lainnya} onChange={e => setPcComponents({...pcComponents, lainnya: e.target.value})} /></div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2"><Label>Merk</Label><Input {...register('merk')} /></div>
+                <div className="space-y-2"><Label>Tipe/Model</Label><Input {...register('tipe_model')} /></div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
