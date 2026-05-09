@@ -10,7 +10,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Route yang hanya bisa diakses Admin (admin role)
 const ADMIN_ONLY_ROUTES = [
   '/users',
-  '/ruangan/kelola',
 ]
 
 // Route yang bisa diakses IT Admin dan Admin
@@ -21,17 +20,15 @@ const IT_ADMIN_ROUTES = [
   '/reports',
 ]
 
-// Route yang hanya bisa diakses Sarana
-const SARANA_ONLY_ROUTES = [
-  '/ruangan/approval',
-  '/inventaris/mutasi/baru',
-  '/inventaris/stock-opname',
-]
-
 // Route yang bisa diakses Sarana atau Admin
+// (Sarana = pengelola ruangan & inventaris; Admin punya akses penuh)
 const SARANA_OR_ADMIN_ROUTES = [
+  '/ruangan/kelola',        // Data Ruangan — CRUD oleh Sarana & Admin
+  '/ruangan/approval',      // Approval booking ruangan
   '/inventaris/barang/baru',
   '/inventaris/barang/edit',
+  '/inventaris/mutasi',     // Mutasi barang
+  '/inventaris/stock-opname',
 ]
 
 // Route publik — tidak perlu login
@@ -63,9 +60,17 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
+
+  // Helper untuk redirect sambil membawa cookie dari supabaseResponse
+  const redirectWithCookies = (url: string | URL) => {
+    const res = NextResponse.redirect(new URL(url, request.url))
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      res.cookies.set(cookie.name, cookie.value, cookie)
+    })
+    return res
+  }
 
   // Public routes — boleh akses tanpa login
   const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r))
@@ -74,9 +79,7 @@ export async function proxy(request: NextRequest) {
     if (user && pathname === '/login') {
       const { data: profile } = await supabase
         .from('profiles').select('role').eq('id', user.id).single()
-      return NextResponse.redirect(
-        new URL(getDefaultRoute(profile?.role), request.url)
-      )
+      return redirectWithCookies(getDefaultRoute(profile?.role))
     }
     return supabaseResponse
   }
@@ -85,7 +88,7 @@ export async function proxy(request: NextRequest) {
   if (!user) {
     const url = new URL('/login', request.url)
     url.searchParams.set('next', pathname)
-    return NextResponse.redirect(url)
+    return redirectWithCookies(url)
   }
 
   // Ambil profil untuk cek role & status
@@ -95,7 +98,7 @@ export async function proxy(request: NextRequest) {
   // Akun nonaktif → logout & redirect
   if (profile && !profile.is_active) {
     await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/login?error=account_disabled', request.url))
+    return redirectWithCookies('/login?error=account_disabled')
   }
 
   const role = profile?.role ?? 'staff'
@@ -103,32 +106,24 @@ export async function proxy(request: NextRequest) {
   // Check admin-only routes (admin role only)
   const isAdminRoute = ADMIN_ONLY_ROUTES.some(r => pathname.startsWith(r))
   if (isAdminRoute && role !== 'admin') {
-    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+    return redirectWithCookies(getDefaultRoute(role))
   }
 
   // Check IT/Admin routes
   const isITRoute = IT_ADMIN_ROUTES.some(r => pathname.startsWith(r))
   if (isITRoute && role !== 'it_admin' && role !== 'admin') {
-    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
-  }
-
-  // Check sarana-only routes
-  const isSaranaRoute = SARANA_ONLY_ROUTES.some(r => pathname.startsWith(r))
-  if (isSaranaRoute && role !== 'sarana') {
-    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+    return redirectWithCookies(getDefaultRoute(role))
   }
 
   // Check sarana-or-admin routes
   const isSaranaOrAdminRoute = SARANA_OR_ADMIN_ROUTES.some(r => pathname.startsWith(r))
   if (isSaranaOrAdminRoute && role !== 'sarana' && role !== 'admin') {
-    return NextResponse.redirect(new URL(getDefaultRoute(role), request.url))
+    return redirectWithCookies(getDefaultRoute(role))
   }
 
   // Redirect root ke halaman default sesuai role
   if (pathname === '/') {
-    return NextResponse.redirect(
-      new URL(getDefaultRoute(role), request.url)
-    )
+    return redirectWithCookies(getDefaultRoute(role))
   }
 
   return supabaseResponse

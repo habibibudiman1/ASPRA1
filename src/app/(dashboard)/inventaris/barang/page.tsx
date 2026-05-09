@@ -12,13 +12,13 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { INVENTARIS_KATEGORI, INVENTARIS_KONDISI } from '@/lib/constants'
 import { ImportBarang } from '@/components/inventaris/import-barang'
+import { ExportPDFBarang } from '@/components/inventaris/export-pdf-barang'
 import {
   getInventaris,
   getInventarisGroupedByNama,
   getInventarisGroupedByLokasi,
 } from '@/lib/actions/inventaris-actions'
 import { formatRupiah } from '@/lib/utils'
-import { ExportPDFButton } from '@/components/shared/export-pdf-button'
 
 export const metadata: Metadata = { title: 'Data Barang | ASPRA' }
 export const dynamic = 'force-dynamic'
@@ -88,7 +88,12 @@ export default async function DataBarangPage({ searchParams }: Props) {
         </div>
         {(isSarana || profile?.role === 'admin') && (
           <div className="flex gap-2">
-            <ExportPDFButton type="inventaris" filters={{ search: params.search, kategori: params.kategori, kondisi: params.kondisi }} />
+            <ExportPDFBarang filters={{ search: params.search, kategori: params.kategori, kondisi: params.kondisi }} />
+            <Button variant="outline" size="sm" asChild>
+              <a href="/api/inventaris/template" download>
+                <span className="mr-1.5">↓</span>Template Excel
+              </a>
+            </Button>
             <ImportBarang />
             <Button asChild>
               <Link href="/inventaris/barang/baru">

@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { RUANGAN_STATUS } from '@/lib/constants'
 import { DeleteRuanganButton } from './delete-button'
+import { ImportRuanganButton } from './import-button'
+import { ExportPDFButton } from './export-pdf-button'
 import type { PaginatedResult, Ruangan } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Data Ruangan | ASPRA' }
@@ -24,12 +26,12 @@ interface Props {
 
 export default async function KelolaRuanganPage({ searchParams }: Props) {
   const profile = await getCurrentUser()
-  if (!profile || profile.role !== 'sarana') {
+  if (!profile || (profile.role !== 'sarana' && profile.role !== 'admin')) {
     return (
       <div className="p-6">
         <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
           <h2 className="font-bold text-lg mb-2">Akses Ditolak</h2>
-          <p>Halaman ini khusus untuk Sarana.</p>
+          <p>Halaman ini khusus untuk Sarana atau Admin.</p>
           <p className="mt-2 text-sm font-mono bg-red-100 p-2 rounded">
             Role terdeteksi: {profile?.role || 'null'}
           </p>
@@ -61,9 +63,13 @@ export default async function KelolaRuanganPage({ searchParams }: Props) {
           <h1 className="text-2xl font-bold">Data Ruangan</h1>
           <p className="text-muted-foreground text-sm">{pagination.total} ruangan terdaftar</p>
         </div>
-        <Button asChild className="flex-shrink-0">
-          <Link href="/ruangan/kelola/baru"><Plus className="h-4 w-4 mr-2" />Tambah Ruangan</Link>
-        </Button>
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+          <ExportPDFButton />
+          <ImportRuanganButton />
+          <Button asChild>
+            <Link href="/ruangan/kelola/baru"><Plus className="h-4 w-4 mr-2" />Tambah Ruangan</Link>
+          </Button>
+        </div>
       </div>
 
       {fetchError && (

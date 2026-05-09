@@ -385,6 +385,7 @@ export const ADMIN_NAV_ITEMS = [
     group: 'Ruangan',
     items: [
       { href: '/ruangan',         label: 'Dashboard Ruangan', icon: 'Building2' },
+      { href: '/ruangan/kelola',  label: 'Data Ruangan',      icon: 'Building2' },
       { href: '/ruangan/jadwal',  label: 'Jadwal Ruangan',    icon: 'CalendarDays' },
       { href: '/ruangan/riwayat', label: 'Riwayat Booking',   icon: 'ClipboardList' },
     ],

@@ -91,6 +91,7 @@ export async function getInventarisGroupedByNama(
     .select('nama_barang, kategori, jumlah_stok, kondisi, lokasi_penempatan')
     .eq('is_deleted', false)
     .order('nama_barang', { ascending: true })
+    .limit(100000)
 
   if (filters?.search) {
     query = query.ilike('nama_barang', `%${filters.search}%`)
@@ -209,6 +210,7 @@ export async function getInventarisGroupedByLokasi(
     .select('lokasi_penempatan, kategori, jumlah_stok')
     .eq('is_deleted', false)
     .order('lokasi_penempatan', { ascending: true })
+    .limit(100000)
 
   if (filters?.search) {
     query = query.ilike('lokasi_penempatan', `%${filters.search}%`)
