@@ -28,10 +28,11 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 
 async function getCurrentUserAndRole() {
   const supabase = await createClient()
-  const { data: { session }, error: authError } = await supabase.auth.getSession()
-  const user = session?.user
+  // getUser() lebih aman dan efisien — tidak re-validate session tiap panggilan
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new Error('Tidak terautentikasi')
 
+  // Ambil profil sekali — gunakan cache() agar tidak double-fetch jika dipanggil lagi
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
@@ -52,14 +53,11 @@ export async function getTickets(
   perPage = DEFAULT_PAGE_SIZE
 ): Promise<PaginatedResult<TicketWithRelations>> {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  // Baca role dari JWT app_metadata — tidak perlu query profiles
+  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
 
   // Hitung offset untuk pagination
   const offset = (page - 1) * perPage
@@ -74,7 +72,7 @@ export async function getTickets(
     `, { count: 'exact' })
 
   // Staff hanya bisa lihat tiket sendiri (RLS juga menerapkan ini)
-  if (profile?.role === 'staff') {
+  if (role === 'staff') {
     query = query.eq('reporter_id', user.id)
   }
 

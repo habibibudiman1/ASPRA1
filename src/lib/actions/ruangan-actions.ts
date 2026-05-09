@@ -15,25 +15,25 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 
 async function requireAuth() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) throw new Error('Tidak terautentikasi')
-  return { supabase, user: session.user }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Tidak terautentikasi')
+  return { supabase, user }
 }
 
 async function requireSaranaOnly() {
   const ctx = await requireAuth()
-  const { data: profile } = await ctx.supabase.from('profiles').select('role').eq('id', ctx.user.id).single()
-  if (profile?.role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
-  return { ...ctx, role: profile.role }
+  const role = (ctx.user.app_metadata?.role as string | undefined) ?? 'staff'
+  if (role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
+  return { ...ctx, role }
 }
 
 async function requireSaranaOrAdmin() {
   const ctx = await requireAuth()
-  const { data: profile } = await ctx.supabase.from('profiles').select('role').eq('id', ctx.user.id).single()
-  if (profile?.role !== 'sarana' && profile?.role !== 'admin') {
+  const role = (ctx.user.app_metadata?.role as string | undefined) ?? 'staff'
+  if (role !== 'sarana' && role !== 'admin') {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }
-  return { ...ctx, role: profile.role }
+  return { ...ctx, role }
 }
 
 // =============================================================================

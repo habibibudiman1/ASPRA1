@@ -16,10 +16,13 @@ import { sendNotification } from './notification-actions'
 
 async function requireAuth() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
+  // Baca role dari JWT app_metadata — tanpa DB query
+  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  // Ambil full_name dari profiles (diperlukan untuk notifikasi)
   const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).single()
-  return { supabase, user, role: profile?.role ?? 'staff', profile }
+  return { supabase, user, role: role, profile }
 }
 
 // =============================================================================

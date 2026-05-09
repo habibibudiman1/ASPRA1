@@ -16,13 +16,14 @@ import { DEFAULT_PAGE_SIZE, STOK_RENDAH_THRESHOLD } from '@/lib/constants'
 
 async function requireSaranaOrAdmin() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) throw new Error('Tidak terautentikasi')
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
-  if (!['sarana', 'admin'].includes(profile?.role ?? '')) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Tidak terautentikasi')
+  // Baca role dari JWT app_metadata — tanpa DB query
+  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  if (!['sarana', 'admin'].includes(role)) {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }
-  return { supabase, user: session.user, role: profile!.role }
+  return { supabase, user, role }
 }
 
 async function requireSarana() {

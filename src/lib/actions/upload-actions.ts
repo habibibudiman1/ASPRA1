@@ -59,7 +59,7 @@ export async function uploadTicketAttachment(
 ): Promise<ActionResult<TicketAttachment[]>> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
 
     const files = formData.getAll('files') as File[]
@@ -126,7 +126,7 @@ export async function uploadTicketAttachment(
 export async function deleteTicketAttachment(attachmentId: string): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
 
     // Ambil info attachment
@@ -172,7 +172,7 @@ export async function uploadInventarisFoto(
 ): Promise<ActionResult<string>> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
 
     // Validasi role

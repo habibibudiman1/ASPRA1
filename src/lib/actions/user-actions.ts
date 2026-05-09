@@ -14,16 +14,18 @@ import { createUserSchema, updateUserSchema, updateProfileSchema, changePassword
 
 async function requireAdmin() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
+  // Baca role dari JWT app_metadata (di-inject via custom_access_token_hook)
+  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  if (role !== 'admin') throw new Error('Hanya Admin yang bisa melakukan aksi ini')
   return { supabase, user }
 }
 
 export const getCurrentUser = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  // getUser() lebih aman dan efisien vs getSession()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
   return data ?? null
@@ -126,7 +128,7 @@ export async function toggleUserActive(userId: string, isActive: boolean): Promi
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
     const raw = {
       full_name: formData.get('full_name') ?? undefined,
@@ -148,7 +150,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 export async function changePassword(formData: FormData): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
     const raw = {
       new_password: formData.get('new_password'),

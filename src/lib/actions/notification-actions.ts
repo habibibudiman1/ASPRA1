@@ -11,7 +11,7 @@ import type { ActionResult, Notification, NotifikasiTipe } from '@/lib/types'
 
 export async function getNotifications(limit = 20): Promise<Notification[]> {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
   const { data } = await supabase
@@ -26,7 +26,7 @@ export async function getNotifications(limit = 20): Promise<Notification[]> {
 
 export async function getUnreadCount(): Promise<number> {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return 0
 
   const { count } = await supabase
@@ -41,7 +41,7 @@ export async function getUnreadCount(): Promise<number> {
 export async function markNotificationRead(notificationId: string): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
 
     const { error } = await supabase
@@ -61,7 +61,7 @@ export async function markNotificationRead(notificationId: string): Promise<Acti
 export async function markAllNotificationsRead(): Promise<ActionResult> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Tidak terautentikasi' }
 
     const { error } = await supabase

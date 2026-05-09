@@ -2,6 +2,11 @@
 // src/proxy.ts  (menggantikan middleware.ts — Next.js 16+)
 // Auth protection & role-based routing
 // Mendukung 4 role: staff, it_admin, admin, sarana
+//
+// OPTIMASI PERFORMA:
+// - Tidak ada query ke database Supabase
+// - Role & is_active dibaca dari JWT claims (app_metadata)
+//   yang di-inject via custom_access_token_hook (migration 008)
 // =============================================================================
 
 import { createServerClient } from '@supabase/ssr'
@@ -21,13 +26,12 @@ const IT_ADMIN_ROUTES = [
 ]
 
 // Route yang bisa diakses Sarana atau Admin
-// (Sarana = pengelola ruangan & inventaris; Admin punya akses penuh)
 const SARANA_OR_ADMIN_ROUTES = [
-  '/ruangan/kelola',        // Data Ruangan — CRUD oleh Sarana & Admin
-  '/ruangan/approval',      // Approval booking ruangan
+  '/ruangan/kelola',
+  '/ruangan/approval',
   '/inventaris/barang/baru',
   '/inventaris/barang/edit',
-  '/inventaris/mutasi',     // Mutasi barang
+  '/inventaris/mutasi',
   '/inventaris/stock-opname',
 ]
 
@@ -60,6 +64,7 @@ export async function proxy(request: NextRequest) {
     }
   )
 
+  // Ambil user — hanya 1 network call (validasi JWT, tanpa DB query)
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
@@ -77,9 +82,9 @@ export async function proxy(request: NextRequest) {
   if (isPublicRoute) {
     // Kalau sudah login dan ke /login, redirect ke home sesuai role
     if (user && pathname === '/login') {
-      const { data: profile } = await supabase
-        .from('profiles').select('role').eq('id', user.id).single()
-      return redirectWithCookies(getDefaultRoute(profile?.role))
+      // Baca role dari JWT app_metadata — TANPA query DB
+      const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+      return redirectWithCookies(getDefaultRoute(role))
     }
     return supabaseResponse
   }
@@ -91,19 +96,17 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookies(url)
   }
 
-  // Ambil profil untuk cek role & status
-  const { data: profile } = await supabase
-    .from('profiles').select('role, is_active').eq('id', user.id).single()
+  // Baca role & is_active dari JWT claims (app_metadata) — TANPA query DB
+  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  const isActive = (user.app_metadata?.is_active as boolean | undefined) ?? true
 
-  // Akun nonaktif → logout & redirect
-  if (profile && !profile.is_active) {
+  // Akun nonaktif → redirect login
+  if (!isActive) {
     await supabase.auth.signOut()
     return redirectWithCookies('/login?error=account_disabled')
   }
 
-  const role = profile?.role ?? 'staff'
-
-  // Check admin-only routes (admin role only)
+  // Check admin-only routes
   const isAdminRoute = ADMIN_ONLY_ROUTES.some(r => pathname.startsWith(r))
   if (isAdminRoute && role !== 'admin') {
     return redirectWithCookies(getDefaultRoute(role))
@@ -147,4 +150,3 @@ export const config = {
 }
 
 export default proxy
-
