@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type {
   ActionResult, PeminjamanRuangan, PeminjamanRuanganWithRelations,
   PaginatedResult, BookingFilters,
@@ -18,11 +18,11 @@ async function requireAuth() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
-  // Baca role dari JWT app_metadata — tanpa DB query
-  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
-  // Ambil full_name dari profiles (diperlukan untuk notifikasi)
+  // Ambil profile untuk full_name (notifikasi) dan role sebagai fallback
   const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).single()
-  return { supabase, user, role: role, profile }
+  // Gunakan JWT role jika ada (hook aktif), fallback ke profiles.role
+  const role = (user.app_metadata?.role as string | undefined) ?? (profile?.role as string | undefined) ?? 'staff'
+  return { supabase, user, role, profile }
 }
 
 // =============================================================================
@@ -79,8 +79,9 @@ export async function getBookingById(id: string): Promise<PeminjamanRuanganWithR
 }
 
 export async function getPendingBookings(): Promise<PeminjamanRuanganWithRelations[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
+  // Admin client untuk bypass RLS: policy hanya izinkan sarana lihat booking miliknya sendiri
+  const adminClient = await createAdminClient()
+  const { data } = await adminClient
     .from('peminjaman_ruangan')
     .select('*, ruangan(*), user:user_id(*)')
     .eq('status', 'menunggu')
@@ -213,12 +214,14 @@ export async function approveBooking(id: string, catatanAdmin?: string): Promise
     const { supabase, user, role } = await requireAuth()
     if (role !== 'sarana') return { success: false, error: 'Hanya Sarana yang bisa menyetujui booking' }
 
-    const { data: booking } = await supabase
+    // Admin client: RLS hanya izinkan sarana SELECT/UPDATE booking miliknya sendiri
+    const adminClient = await createAdminClient()
+    const { data: booking } = await adminClient
       .from('peminjaman_ruangan').select('*, user:user_id(id, full_name), ruangan(nama_ruangan)').eq('id', id).single()
     if (!booking) return { success: false, error: 'Booking tidak ditemukan' }
     if (booking.status !== 'menunggu') return { success: false, error: 'Booking sudah tidak dalam status menunggu' }
 
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('peminjaman_ruangan')
       .update({ status: 'disetujui', approved_by: user.id, approved_at: new Date().toISOString(), catatan_admin: catatanAdmin ?? null })
       .eq('id', id)
@@ -250,11 +253,12 @@ export async function rejectBooking(id: string, catatanAdmin: string): Promise<A
       return { success: false, error: 'Catatan alasan penolakan wajib diisi (minimal 5 karakter)' }
     }
 
-    const { data: booking } = await supabase
+    const adminClient = await createAdminClient()
+    const { data: booking } = await adminClient
       .from('peminjaman_ruangan').select('*, user:user_id(id), ruangan(nama_ruangan)').eq('id', id).single()
     if (!booking) return { success: false, error: 'Booking tidak ditemukan' }
 
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('peminjaman_ruangan')
       .update({ status: 'ditolak', approved_by: user.id, approved_at: new Date().toISOString(), catatan_admin: catatanAdmin })
       .eq('id', id)

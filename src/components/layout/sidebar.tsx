@@ -76,6 +76,10 @@ export function Sidebar({ profile, collapsed, onToggle, mobile = false, onNaviga
       pathname.startsWith('/inventaris/lokasi') ||
       pathname.startsWith('/inventaris/barang')
     )) return true
+    // Cegah /ruangan aktif saat berada di sub-halaman yang lebih spesifik
+    if (href === '/ruangan' && pathname.startsWith('/ruangan/')) return pathname === '/ruangan'
+    // Cegah /inventaris aktif saat berada di sub-halaman yang lebih spesifik
+    if (href === '/inventaris' && pathname.startsWith('/inventaris/')) return pathname === '/inventaris'
     return pathname === href || (href !== '/' && pathname.startsWith(href + '/'))
   }
 

@@ -18,8 +18,8 @@ async function requireSaranaOrAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
-  // Baca role dari JWT app_metadata — tanpa DB query
-  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const role = (user.app_metadata?.role as string | undefined) ?? (profile?.role as string | undefined) ?? 'staff'
   if (!['sarana', 'admin'].includes(role)) {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }
@@ -87,28 +87,31 @@ export async function getInventarisGroupedByNama(
 ): Promise<InventarisGroupedByNama[]> {
   const supabase = await createClient()
 
-  let query = supabase
-    .from('inventaris')
-    .select('nama_barang, kategori, jumlah_stok, kondisi, lokasi_penempatan')
-    .eq('is_deleted', false)
-    .order('nama_barang', { ascending: true })
-    .limit(100000)
+  type NamaRow = { nama_barang: string; kategori: string; jumlah_stok: number; kondisi: string; lokasi_penempatan: string }
+  const allData: NamaRow[] = []
+  const CHUNK = 1000
+  let from = 0
 
-  if (filters?.search) {
-    query = query.ilike('nama_barang', `%${filters.search}%`)
-  }
-  if (filters?.kategori && filters.kategori !== 'all') {
-    query = query.eq('kategori', filters.kategori)
-  }
-  if (filters?.lokasi) {
-    query = query.eq('lokasi_penempatan', filters.lokasi)
-  }
-  if (filters?.kondisi && filters.kondisi !== 'all') {
-    query = query.eq('kondisi', filters.kondisi)
-  }
+  while (true) {
+    let query = supabase
+      .from('inventaris')
+      .select('nama_barang, kategori, jumlah_stok, kondisi, lokasi_penempatan')
+      .eq('is_deleted', false)
+      .order('nama_barang', { ascending: true })
+      .range(from, from + CHUNK - 1)
 
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
+    if (filters?.search) query = query.ilike('nama_barang', `%${filters.search}%`)
+    if (filters?.kategori && filters.kategori !== 'all') query = query.eq('kategori', filters.kategori)
+    if (filters?.lokasi) query = query.eq('lokasi_penempatan', filters.lokasi)
+    if (filters?.kondisi && filters.kondisi !== 'all') query = query.eq('kondisi', filters.kondisi)
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) break
+    allData.push(...(data as NamaRow[]))
+    if (data.length < CHUNK) break
+    from += CHUNK
+  }
 
   // Group di sisi aplikasi
   const groupMap = new Map<string, {
@@ -119,7 +122,7 @@ export async function getInventarisGroupedByNama(
     lokasi_set: Set<string>
   }>()
 
-  for (const row of data ?? []) {
+  for (const row of allData) {
     const key = row.nama_barang
     if (!groupMap.has(key)) {
       groupMap.set(key, {
@@ -206,19 +209,28 @@ export async function getInventarisGroupedByLokasi(
 ): Promise<InventarisGroupedByLokasi[]> {
   const supabase = await createClient()
 
-  let query = supabase
-    .from('inventaris')
-    .select('lokasi_penempatan, kategori, jumlah_stok')
-    .eq('is_deleted', false)
-    .order('lokasi_penempatan', { ascending: true })
-    .limit(100000)
+  type LokasiRow = { lokasi_penempatan: string; kategori: string; jumlah_stok: number }
+  const allData: LokasiRow[] = []
+  const CHUNK = 1000
+  let from = 0
 
-  if (filters?.search) {
-    query = query.ilike('lokasi_penempatan', `%${filters.search}%`)
+  while (true) {
+    let query = supabase
+      .from('inventaris')
+      .select('lokasi_penempatan, kategori, jumlah_stok')
+      .eq('is_deleted', false)
+      .order('lokasi_penempatan', { ascending: true })
+      .range(from, from + CHUNK - 1)
+
+    if (filters?.search) query = query.ilike('lokasi_penempatan', `%${filters.search}%`)
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) break
+    allData.push(...(data as LokasiRow[]))
+    if (data.length < CHUNK) break
+    from += CHUNK
   }
-
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
 
   const lokasiMap = new Map<string, {
     total_jenis: number
@@ -226,7 +238,7 @@ export async function getInventarisGroupedByLokasi(
     kategori_set: Set<InventarisKategori>
   }>()
 
-  for (const row of data ?? []) {
+  for (const row of allData) {
     const key = row.lokasi_penempatan
     if (!lokasiMap.has(key)) {
       lokasiMap.set(key, { total_jenis: 0, total_unit: 0, kategori_set: new Set() })
@@ -441,19 +453,36 @@ export async function getDashboardInventaris(): Promise<
 > {
   const supabase = await createClient()
 
-  // Hanya ambil kolom yang dibutuhkan untuk kalkulasi dashboard (bukan catatan/foto dll)
-  const { data: items } = await supabase
-    .from('inventaris')
-    .select('id, nama_barang, kode_barang, kategori, kondisi, jumlah_stok, nilai_perolehan, lokasi_penempatan, satuan, merk, tipe_model')
-    .eq('is_deleted', false)
+  // Fetch semua item via pagination (Supabase default cap = 1000 rows/request)
+  type DashItem = {
+    id: string; nama_barang: string; kode_barang: string; kategori: string
+    kondisi: string; jumlah_stok: number; nilai_perolehan: number | null
+    lokasi_penempatan: string; satuan: string; merk: string | null; tipe_model: string | null
+  }
+  const items: DashItem[] = []
+  const CHUNK = 1000
+  let from = 0
 
-  const totalJenis = items?.length ?? 0
-  const totalUnit = items?.reduce((sum, i) => sum + i.jumlah_stok, 0) ?? 0
-  const totalNilai = items?.reduce((sum, i) => sum + (i.nilai_perolehan ?? 0) * i.jumlah_stok, 0) ?? 0
+  while (true) {
+    const { data, error } = await supabase
+      .from('inventaris')
+      .select('id, nama_barang, kode_barang, kategori, kondisi, jumlah_stok, nilai_perolehan, lokasi_penempatan, satuan, merk, tipe_model')
+      .eq('is_deleted', false)
+      .range(from, from + CHUNK - 1)
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) break
+    items.push(...(data as DashItem[]))
+    if (data.length < CHUNK) break
+    from += CHUNK
+  }
+
+  const totalJenis = items.length
+  const totalUnit = items.reduce((sum, i) => sum + i.jumlah_stok, 0)
+  const totalNilai = items.reduce((sum, i) => sum + (i.nilai_perolehan ?? 0) * i.jumlah_stok, 0)
 
   // By kategori
   const kategoriMap = new Map<string, { jenis: number; unit: number }>()
-  for (const item of items ?? []) {
+  for (const item of items) {
     const k = kategoriMap.get(item.kategori) ?? { jenis: 0, unit: 0 }
     kategoriMap.set(item.kategori, { jenis: k.jenis + 1, unit: k.unit + item.jumlah_stok })
   }
@@ -465,7 +494,7 @@ export async function getDashboardInventaris(): Promise<
 
   // By kondisi
   const kondisiMap = new Map<string, number>()
-  for (const item of items ?? []) {
+  for (const item of items) {
     kondisiMap.set(item.kondisi, (kondisiMap.get(item.kondisi) ?? 0) + 1)
   }
   const byKondisi: InventarisByKondisi[] = Array.from(kondisiMap.entries()).map(([k, v]) => ({
@@ -492,7 +521,7 @@ export async function getDashboardInventaris(): Promise<
   }))
 
   // Stok rendah
-  const stokRendah = (items ?? []).filter(i => i.jumlah_stok < STOK_RENDAH_THRESHOLD) as Inventaris[]
+  const stokRendah = items.filter(i => i.jumlah_stok < STOK_RENDAH_THRESHOLD) as Inventaris[]
 
   return {
     total_jenis_barang: totalJenis,
