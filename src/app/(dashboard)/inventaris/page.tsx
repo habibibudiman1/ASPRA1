@@ -105,7 +105,7 @@ export default async function DashboardInventarisPage() {
         <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800">
           <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
           <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-            {data.stok_rendah_count} barang stok rendah (&lt;5 unit)
+            {data.stok_rendah_count}{' '}barang stok rendah (&lt;5 unit)
           </p>
         </div>
       )}
@@ -146,30 +146,63 @@ export default async function DashboardInventarisPage() {
         </Card>
       )}
 
-      {/* Stok Rendah */}
-      {data.stokRendah.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <PackageCheck className="h-4 w-4 text-amber-500" />
-              Barang Stok Rendah
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {data.stokRendah.slice(0, 5).map(item => (
-                <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{item.nama_barang}</p>
-                    <p className="text-xs text-muted-foreground">{item.kode_barang} · {item.lokasi_penempatan}</p>
-                  </div>
-                  <Badge variant="outline" className="text-amber-700 border-amber-300">{item.jumlah_stok} {item.satuan}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Stok Rendah — grouped by nama_barang */}
+      {data.stokRendah.length > 0 && (() => {
+        const grouped = new Map<string, { kategori: string; satuan: string; totalStok: number; count: number }>()
+        for (const item of data.stokRendah) {
+          const existing = grouped.get(item.nama_barang)
+          if (existing) {
+            existing.totalStok += item.jumlah_stok
+            existing.count += 1
+          } else {
+            grouped.set(item.nama_barang, { kategori: item.kategori, satuan: item.satuan, totalStok: item.jumlah_stok, count: 1 })
+          }
+        }
+        const rows = Array.from(grouped.entries())
+          .sort((a, b) => a[1].totalStok - b[1].totalStok)
+          .slice(0, 8)
+
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <PackageCheck className="h-4 w-4 text-amber-500" />
+                Barang Stok Rendah
+                <span className="ml-auto text-xs font-normal text-muted-foreground">{grouped.size} jenis</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-0">
+                {rows.map(([nama, g]) => {
+                  const kat = INVENTARIS_KATEGORI[g.kategori as keyof typeof INVENTARIS_KATEGORI]
+                  return (
+                    <div key={nama} className="flex items-center justify-between py-2.5 border-b last:border-0 gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ background: kat?.color ?? '#9ca3af' }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{nama}</p>
+                          <p className="text-xs text-muted-foreground">{kat?.label ?? g.kategori}{g.count > 1 ? ` · ${g.count} lokasi` : ''}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-amber-700 border-amber-300 flex-shrink-0">
+                        {g.totalStok} {g.satuan}
+                      </Badge>
+                    </div>
+                  )
+                })}
+              </div>
+              {grouped.size > 8 && (
+                <Button variant="link" size="sm" asChild className="mt-2 px-0">
+                  <Link href="/inventaris/barang">Lihat semua ({grouped.size} jenis)</Link>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })()}
     </div>
   )
 }

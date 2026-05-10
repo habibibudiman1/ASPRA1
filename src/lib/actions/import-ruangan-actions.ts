@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 interface RuanganImportRow {
   nama_ruangan: string
@@ -40,6 +40,9 @@ export async function importRuanganFromExcel(rows: RuanganImportRow[]): Promise<
   if (profile?.role !== 'sarana' && profile?.role !== 'admin') {
     return { success: false, imported: 0, skipped: 0, errors: [], error: 'Akses ditolak' }
   }
+
+  // Admin client untuk bypass RLS: policy INSERT ruangan hanya izinkan it_admin & admin, bukan sarana
+  const adminClient = await createAdminClient()
 
   let imported = 0
   let skipped = 0
@@ -104,7 +107,7 @@ export async function importRuanganFromExcel(rows: RuanganImportRow[]): Promise<
       keterangan: row.keterangan?.trim() || null,
     }
 
-    const { error: insertError } = await supabase.from('ruangan').insert(payload)
+    const { error: insertError } = await adminClient.from('ruangan').insert(payload)
     if (insertError) {
       if (insertError.message.includes('unique') || insertError.message.includes('duplicate')) {
         errors.push({ row: rowNum, message: `[${row.nama_ruangan}] Nama ruangan sudah ada, dilewati` })

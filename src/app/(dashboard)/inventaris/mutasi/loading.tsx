@@ -2,27 +2,20 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MutasiLoading() {
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-10 w-32" />
+    <div className="p-6 space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div><Skeleton className="h-8 w-40 mb-2" /><Skeleton className="h-4 w-36" /></div>
+        <Skeleton className="h-9 w-32" />
       </div>
-      <div className="flex gap-3 flex-wrap">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-10 w-36" />
-        <Skeleton className="h-10 w-36" />
-      </div>
-      <div className="rounded-md border">
-        <div className="border-b px-4 py-3 bg-muted/50">
-          <Skeleton className="h-6 w-full" />
-        </div>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="px-4 py-4 border-b flex justify-between items-center">
-            <Skeleton className="h-5 w-[25%]" />
-            <Skeleton className="h-6 w-16" />
-            <Skeleton className="h-5 w-[10%]" />
-            <Skeleton className="h-5 w-[10%]" />
-            <Skeleton className="h-5 w-[15%]" />
+      <div className="rounded-lg border overflow-hidden">
+        <div className="bg-muted/50 px-4 py-3"><Skeleton className="h-4 w-full" /></div>
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="px-4 py-3 border-t flex items-center gap-4">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-40 flex-1" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-28" />
           </div>
         ))}
       </div>

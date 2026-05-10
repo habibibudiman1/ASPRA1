@@ -96,7 +96,8 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookies(url)
   }
 
-  // Baca role & is_active dari JWT claims; fallback ke DB jika JWT hook belum aktif
+  // Baca role & is_active dari JWT claims (app_metadata) — TANPA query DB
+  // Fallback ke profiles table jika hook belum diaktifkan di Supabase Dashboard
   let role = (user.app_metadata?.role as string | undefined)
   let isActive = (user.app_metadata?.is_active as boolean | undefined) ?? true
   if (!role) {
