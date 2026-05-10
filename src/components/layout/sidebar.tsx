@@ -71,11 +71,12 @@ export function Sidebar({ profile, collapsed, onToggle, mobile = false, onNaviga
   const isActive = (href: string) => {
     if (href === '/tickets/new') return pathname === href
     if (href === '/inventaris/peminjaman/baru') return pathname === href
-    // Drilldown lokasi dan nama dianggap sub-halaman dari Data Barang
     if (href === '/inventaris/barang' && (
       pathname.startsWith('/inventaris/lokasi') ||
       pathname.startsWith('/inventaris/barang')
     )) return true
+    if (href === '/ruangan' && pathname.startsWith('/ruangan/')) return pathname === '/ruangan'
+    if (href === '/inventaris' && pathname.startsWith('/inventaris/')) return pathname === '/inventaris'
     return pathname === href || (href !== '/' && pathname.startsWith(href + '/'))
   }
 

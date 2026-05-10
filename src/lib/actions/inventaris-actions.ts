@@ -18,8 +18,8 @@ async function requireSaranaOrAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
-  // Baca role dari JWT app_metadata — tanpa DB query
-  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const role = (user.app_metadata?.role as string | undefined) ?? (profile?.role as string | undefined) ?? 'staff'
   if (!['sarana', 'admin'].includes(role)) {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }
