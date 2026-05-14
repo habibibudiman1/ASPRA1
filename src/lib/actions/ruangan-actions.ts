@@ -20,9 +20,26 @@ async function requireAuth() {
   return { supabase, user }
 }
 
+<<<<<<< HEAD
+=======
+async function getRole(supabase: Awaited<ReturnType<typeof createClient>>, user: { id: string; app_metadata?: Record<string, unknown> }): Promise<string> {
+  const jwtRole = (user.app_metadata?.role as string | undefined)
+  if (jwtRole) return jwtRole
+  const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  return (data?.role as string | undefined) ?? 'staff'
+}
+
+async function requireSaranaOnly() {
+  const ctx = await requireAuth()
+  const role = await getRole(ctx.supabase, ctx.user)
+  if (role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
+  return { ...ctx, role }
+}
+
+>>>>>>> 607c04221c287186d66ef8be19e289bd62f5ae0a
 async function requireSaranaOrAdmin() {
   const ctx = await requireAuth()
-  const role = (ctx.user.app_metadata?.role as string | undefined) ?? 'staff'
+  const role = await getRole(ctx.supabase, ctx.user)
   if (role !== 'sarana' && role !== 'admin') {
     throw new Error('Hanya Sarana atau Admin yang bisa melakukan aksi ini')
   }

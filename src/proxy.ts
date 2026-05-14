@@ -97,8 +97,18 @@ export async function proxy(request: NextRequest) {
   }
 
   // Baca role & is_active dari JWT claims (app_metadata) — TANPA query DB
-  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
-  const isActive = (user.app_metadata?.is_active as boolean | undefined) ?? true
+  // Fallback ke profiles table jika hook belum diaktifkan di Supabase Dashboard
+  let role = (user.app_metadata?.role as string | undefined)
+  let isActive = (user.app_metadata?.is_active as boolean | undefined) ?? true
+  if (!role) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_active')
+      .eq('id', user.id)
+      .single()
+    role = (profile?.role as string | undefined) ?? 'staff'
+    isActive = (profile?.is_active as boolean | undefined) ?? true
+  }
 
   // Akun nonaktif → redirect login
   if (!isActive) {

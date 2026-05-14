@@ -38,7 +38,7 @@ export function MobileNav({ profile }: MobileNavProps) {
     : profile.role === 'sarana'
     ? [
         { href: '/ruangan/approval',      icon: CheckSquare,  label: 'Approval' },
-        { href: '/ruangan',               icon: Building2,    label: 'Ruangan' },
+        { href: '/ruangan/kelola',        icon: Building2,    label: 'Data Ruangan' },
         { href: '/inventaris',            icon: Package,      label: 'Inventaris' },
         { href: '/inventaris/peminjaman', icon: PackageCheck, label: 'Peminjaman' },
         { href: '/settings',              icon: User,         label: 'Profil' },
@@ -50,8 +50,12 @@ export function MobileNav({ profile }: MobileNavProps) {
         { href: '/settings',              icon: User,         label: 'Profil' },
       ]
 
-  const isActive = (href: string) =>
-    pathname === href || (href !== '/tickets/new' && pathname.startsWith(href + '/'))
+  const isActive = (href: string) => {
+    if (href === '/tickets/new') return pathname === href
+    if (href === '/ruangan' && pathname.startsWith('/ruangan/')) return false
+    if (href === '/inventaris' && pathname.startsWith('/inventaris/')) return false
+    return pathname === href || pathname.startsWith(href + '/')
+  }
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur">
