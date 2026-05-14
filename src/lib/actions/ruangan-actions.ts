@@ -20,13 +20,6 @@ async function requireAuth() {
   return { supabase, user }
 }
 
-async function requireSaranaOnly() {
-  const ctx = await requireAuth()
-  const role = (ctx.user.app_metadata?.role as string | undefined) ?? 'staff'
-  if (role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
-  return { ...ctx, role }
-}
-
 async function requireSaranaOrAdmin() {
   const ctx = await requireAuth()
   const role = (ctx.user.app_metadata?.role as string | undefined) ?? 'staff'
@@ -114,7 +107,7 @@ export async function getRuanganList(): Promise<Ruangan[]> {
 export async function createRuangan(formData: FormData): Promise<ActionResult<Ruangan>> {
   try {
     await requireSaranaOrAdmin()
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     const fasilitas = formData.get('fasilitas')
     const payload = {
@@ -139,6 +132,7 @@ export async function createRuangan(formData: FormData): Promise<ActionResult<Ru
 
     revalidatePath('/ruangan')
     revalidatePath('/ruangan/kelola')
+    revalidatePath('/ruangan/booking')
     return { success: true, data: data as Ruangan }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
@@ -148,7 +142,7 @@ export async function createRuangan(formData: FormData): Promise<ActionResult<Ru
 export async function updateRuangan(formData: FormData): Promise<ActionResult> {
   try {
     await requireSaranaOrAdmin()
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const id = formData.get('id') as string
 
     const fasilitas = formData.get('fasilitas')
@@ -179,7 +173,7 @@ export async function updateRuangan(formData: FormData): Promise<ActionResult> {
 export async function deleteRuangan(id: string): Promise<ActionResult> {
   try {
     await requireSaranaOrAdmin()
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     // Cek apakah ada booking aktif
     const { count } = await supabase

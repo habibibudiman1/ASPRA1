@@ -8,8 +8,8 @@
 import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getInventaris } from '@/lib/actions/inventaris-actions'
-import { getTickets } from '@/lib/actions/ticket-actions'
+import { getAllInventarisForExport } from '@/lib/actions/export-inventaris-actions'
+import { getAllTicketsForExport } from '@/lib/actions/export-ticket-actions'
 import { exportInventarisToPDF, exportTicketsToPDF } from '@/lib/pdf-export'
 import { toast } from 'sonner'
 
@@ -29,17 +29,16 @@ export function ExportPDFButton({ type, label = 'Export PDF', filters }: Props) 
 
     try {
       if (type === 'inventaris') {
-        // Fetch up to 1000 items untuk laporan export
-        const { data } = await getInventaris(filters || {}, 1, 1000)
+        const data = await getAllInventarisForExport(filters || {})
         if (!data || data.length === 0) {
           toast.warning('Tidak ada data inventaris untuk diexport.')
           return
         }
         exportInventarisToPDF(data, 'Laporan Semua Barang')
         toast.success('PDF Inventaris berhasil dibuat')
-        
+
       } else if (type === 'tickets') {
-        const { data } = await getTickets(filters || {}, 1, 1000)
+        const data = await getAllTicketsForExport(filters || {})
         if (!data || data.length === 0) {
           toast.warning('Tidak ada data tiket untuk diexport.')
           return
