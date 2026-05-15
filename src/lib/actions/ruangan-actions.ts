@@ -20,8 +20,6 @@ async function requireAuth() {
   return { supabase, user }
 }
 
-<<<<<<< HEAD
-=======
 async function getRole(supabase: Awaited<ReturnType<typeof createClient>>, user: { id: string; app_metadata?: Record<string, unknown> }): Promise<string> {
   const jwtRole = (user.app_metadata?.role as string | undefined)
   if (jwtRole) return jwtRole
@@ -29,14 +27,8 @@ async function getRole(supabase: Awaited<ReturnType<typeof createClient>>, user:
   return (data?.role as string | undefined) ?? 'staff'
 }
 
-async function requireSaranaOnly() {
-  const ctx = await requireAuth()
-  const role = await getRole(ctx.supabase, ctx.user)
-  if (role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
-  return { ...ctx, role }
-}
 
->>>>>>> 607c04221c287186d66ef8be19e289bd62f5ae0a
+
 async function requireSaranaOrAdmin() {
   const ctx = await requireAuth()
   const role = await getRole(ctx.supabase, ctx.user)
@@ -117,6 +109,17 @@ export async function getRuanganList(): Promise<Ruangan[]> {
     .select('*')
     .eq('is_deleted', false)
     .eq('status', 'tersedia')
+    .order('nama_ruangan', { ascending: true })
+  return (data ?? []) as Ruangan[]
+}
+
+// Semua ruangan aktif (tidak difilter status) — untuk halaman jadwal/kalender
+export async function getAllRuanganForSchedule(): Promise<Ruangan[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('ruangan')
+    .select('*')
+    .eq('is_deleted', false)
     .order('nama_ruangan', { ascending: true })
   return (data ?? []) as Ruangan[]
 }
@@ -299,34 +302,14 @@ export async function getDashboardRuangan(): Promise<DashboardRuanganStats & { r
   const today = new Date().toISOString().split('T')[0]
   const nowTime = new Date().toTimeString().split(' ')[0]
 
-  // Total ruangan
-  const { count: totalRuangan } = await supabase
-    .from('ruangan').select('*', { count: 'exact', head: true }).eq('is_deleted', false)
-
-  // Status per kategori
-  const { data: byStatus } = await supabase
-    .from('ruangan').select('status').eq('is_deleted', false)
-  const tersedia = byStatus?.filter(r => r.status === 'tersedia').length ?? 0
-  const maintenance = byStatus?.filter(r => r.status === 'maintenance').length ?? 0
-
-  // Booking hari ini
-  const { count: bookingHariIni } = await supabase
-    .from('peminjaman_ruangan').select('*', { count: 'exact', head: true })
-    .eq('tanggal', today).in('status', ['menunggu', 'disetujui'])
-
-  // Booking menunggu
-  const { count: bookingMenunggu } = await supabase
-    .from('peminjaman_ruangan').select('*', { count: 'exact', head: true })
-    .eq('status', 'menunggu')
-
-  // Booking aktif (sedang dipakai sekarang)
-  const { count: sedangDipakai } = await supabase
-    .from('peminjaman_ruangan').select('*', { count: 'exact', head: true })
-    .eq('tanggal', today).eq('status', 'disetujui')
-    .lte('jam_mulai', nowTime).gte('jam_selesai', nowTime)
-
-  // Ruangan dengan status realtime — 2 bulk queries menggantikan N*2 queries
-  const [{ data: semuaRuangan }, { data: allAktif }, { data: allBerikutnya }] = await Promise.all([
+  // Semua query dijalankan paralel — dari 8 roundtrip menjadi 5
+  const [
+    { data: semuaRuangan },
+    { data: allAktif },
+    { data: allBerikutnya },
+    { count: bookingHariIni },
+    { count: bookingMenunggu },
+  ] = await Promise.all([
     supabase.from('ruangan').select('*').eq('is_deleted', false).order('nama_ruangan'),
     supabase
       .from('peminjaman_ruangan')
@@ -339,22 +322,31 @@ export async function getDashboardRuangan(): Promise<DashboardRuanganStats & { r
       .eq('tanggal', today).in('status', ['menunggu', 'disetujui'])
       .gt('jam_mulai', nowTime)
       .order('jam_mulai', { ascending: true }),
+    supabase
+      .from('peminjaman_ruangan').select('*', { count: 'exact', head: true })
+      .eq('tanggal', today).in('status', ['menunggu', 'disetujui']),
+    supabase
+      .from('peminjaman_ruangan').select('*', { count: 'exact', head: true })
+      .eq('status', 'menunggu'),
   ])
 
-  const ruanganStatus: RuanganStatusRealtime[] = (semuaRuangan ?? []).map((r) => {
-    const aktif = (allAktif ?? []).find(b => b.ruangan_id === r.id) ?? null
-    const berikutnya = (allBerikutnya ?? []).find(b => b.ruangan_id === r.id) ?? null
-    return {
-      ruangan: r as Ruangan,
-      booking_aktif: aktif as PeminjamanRuanganWithRelations | null,
-      booking_berikutnya: berikutnya as PeminjamanRuanganWithRelations | null,
-    }
-  })
+  const rooms = semuaRuangan ?? []
+  const aktifList = allAktif ?? []
+
+  // Hitung stats dari data yang sudah di-fetch — tidak perlu query tambahan
+  const tersedia = rooms.filter(r => r.status === 'tersedia').length
+  const maintenance = rooms.filter(r => r.status === 'maintenance').length
+
+  const ruanganStatus: RuanganStatusRealtime[] = rooms.map((r) => ({
+    ruangan: r as Ruangan,
+    booking_aktif: (aktifList.find(b => b.ruangan_id === r.id) ?? null) as PeminjamanRuanganWithRelations | null,
+    booking_berikutnya: ((allBerikutnya ?? []).find(b => b.ruangan_id === r.id) ?? null) as PeminjamanRuanganWithRelations | null,
+  }))
 
   return {
-    total_ruangan: totalRuangan ?? 0,
+    total_ruangan: rooms.length,
     tersedia,
-    sedang_dipakai: sedangDipakai ?? 0,
+    sedang_dipakai: aktifList.length,
     maintenance,
     booking_hari_ini: bookingHariIni ?? 0,
     booking_menunggu: bookingMenunggu ?? 0,

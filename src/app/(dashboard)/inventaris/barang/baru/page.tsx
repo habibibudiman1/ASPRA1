@@ -7,7 +7,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { createInventarisSchema, type CreateInventarisSchema } from '@/lib/validators/inventaris-schema'
@@ -28,13 +28,13 @@ export default function TambahBarangPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [pcComponents, setPcComponents] = useState({ os: '', processor: '', mb: '', ram: '', storage: '', pengguna: '', lainnya: '' })
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CreateInventarisSchema>({
+  const { register, handleSubmit, setValue, control, formState: { errors } } = useForm<CreateInventarisSchema>({
     resolver: zodResolver(createInventarisSchema),
     defaultValues: { kondisi: 'baik' as const, jumlah_stok: 1, satuan: 'unit' },
   })
 
-  const kategoriWatch = watch('kategori')
-  const namaBarangWatch = watch('nama_barang') || ''
+  const kategoriWatch = useWatch({ control, name: 'kategori' })
+  const namaBarangWatch = useWatch({ control, name: 'nama_barang' }) || ''
   const isPC = namaBarangWatch.toLowerCase().includes('pc')
 
   const handleGenerateKode = async () => {

@@ -26,11 +26,6 @@ async function requireSaranaOrAdmin() {
   return { supabase, user, role }
 }
 
-async function requireSarana() {
-  const ctx = await requireSaranaOrAdmin()
-  if (ctx.role !== 'sarana') throw new Error('Hanya Sarana yang bisa melakukan aksi ini')
-  return ctx
-}
 
 // =============================================================================
 // READ

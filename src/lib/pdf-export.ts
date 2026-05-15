@@ -1,20 +1,21 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatRupiah, formatDate } from './utils'
+import type { Inventaris, TicketWithRelations } from './types'
 
 // =============================================================================
 // lib/pdf-export.ts
 // Utilitas untuk export data ke PDF menggunakan jsPDF + autoTable
 // =============================================================================
 
-export function exportInventarisToPDF(data: any[], title: string) {
+export function exportInventarisToPDF(data: Inventaris[], title: string) {
   const doc = new jsPDF()
 
   // Header
   doc.setFontSize(18)
   doc.setTextColor(22, 163, 74) // Primary green
   doc.text('ASSYIFA IT INVENTORY REPORT', 14, 22)
-  
+
   doc.setFontSize(11)
   doc.setTextColor(100)
   doc.text(title, 14, 30)
@@ -22,21 +23,21 @@ export function exportInventarisToPDF(data: any[], title: string) {
 
   // Tabel Data
   const tableColumn = ["Kode", "Nama Barang", "Kategori", "Stok", "Lokasi", "Kondisi", "Nilai"]
-  const tableRows: any[] = []
+  const tableRows: (string | number)[][] = []
 
   let totalNilai = 0
 
   data.forEach(item => {
-    const rowData = [
+    const rowData: (string | number)[] = [
       item.kode_barang,
       item.nama_barang,
       item.kategori,
       `${item.jumlah_stok} ${item.satuan}`,
       item.lokasi_penempatan,
       item.kondisi,
-      item.nilai_perolehan ? formatRupiah(item.nilai_perolehan) : '-'
+      item.nilai_perolehan ? formatRupiah(item.nilai_perolehan) : '-',
     ]
-    totalNilai += item.nilai_perolehan || 0
+    totalNilai += item.nilai_perolehan ?? 0
     tableRows.push(rowData)
   })
 
@@ -63,7 +64,7 @@ export function exportInventarisToPDF(data: any[], title: string) {
   })
 
   // Footer
-  const pageCount = (doc as any).internal.getNumberOfPages()
+  const pageCount = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages()
   doc.setFontSize(8)
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
@@ -78,31 +79,32 @@ export function exportInventarisToPDF(data: any[], title: string) {
   doc.save(`Inventaris_${new Date().getTime()}.pdf`)
 }
 
-export function exportTicketsToPDF(data: any[]) {
+export function exportTicketsToPDF(data: TicketWithRelations[]) {
   const doc = new jsPDF()
 
   // Header
   doc.setFontSize(18)
   doc.setTextColor(22, 163, 74)
   doc.text('ASSYIFA IT TICKET REPORT', 14, 22)
-  
+
   doc.setFontSize(11)
   doc.setTextColor(100)
   doc.text(`Tanggal Export: ${formatDate(new Date().toISOString())}`, 14, 30)
 
   // Tabel Data
   const tableColumn = ["Tiket ID", "Judul", "Status", "Prioritas", "Kategori", "Dibuat Oleh", "Tanggal"]
-  const tableRows: any[] = []
+  const tableRows: (string | number)[][] = []
 
   data.forEach(ticket => {
-    const rowData = [
+    const judul = ticket.title.length > 30 ? ticket.title.substring(0, 30) + '...' : ticket.title
+    const rowData: (string | number)[] = [
       ticket.ticket_number,
-      ticket.title.substring(0, 30) + (ticket.title.length > 30 ? '...' : ''),
+      judul,
       ticket.status,
       ticket.priority,
-      ticket.category?.name || '-',
-      ticket.reporter?.full_name || '-',
-      formatDate(ticket.created_at)
+      ticket.category?.name ?? '-',
+      ticket.reporter?.full_name ?? '-',
+      formatDate(ticket.created_at),
     ]
     tableRows.push(rowData)
   })

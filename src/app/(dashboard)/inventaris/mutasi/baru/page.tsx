@@ -5,14 +5,14 @@
 // Form tambah mutasi barang — Sarana & Admin
 // =============================================================================
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { createMutasiSchema, type CreateMutasiSchema } from '@/lib/validators/inventaris-schema'
 import { createMutasi } from '@/lib/actions/mutasi-actions'
-import { getInventarisList, getInventarisById } from '@/lib/actions/inventaris-actions'
+import { getInventarisList } from '@/lib/actions/inventaris-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,32 +29,29 @@ export default function TambahMutasiPage() {
   const preselectedId = searchParams.get('barang')
   const [isPending, startTransition] = useTransition()
   const [barangList, setBarangList] = useState<Inventaris[]>([])
-  const [selectedBarang, setSelectedBarang] = useState<Inventaris | null>(null)
   const today = new Date().toISOString().split('T')[0]
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CreateMutasiSchema>({
+  const { register, handleSubmit, setValue, control, formState: { errors } } = useForm<CreateMutasiSchema>({
     resolver: zodResolver(createMutasiSchema),
     defaultValues: { tanggal: today, jumlah: 1 },
   })
 
-  const watchInventarisId = watch('inventaris_id')
-  const watchJenisMutasi = watch('jenis_mutasi')
+  const watchInventarisId = useWatch({ control, name: 'inventaris_id' })
+  const watchJenisMutasi = useWatch({ control, name: 'jenis_mutasi' })
 
   useEffect(() => {
     getInventarisList().then(list => {
       setBarangList(list)
       if (preselectedId) {
         const item = list.find(i => i.id === preselectedId)
-        if (item) { setValue('inventaris_id', preselectedId); setSelectedBarang(item) }
+        if (item) { setValue('inventaris_id', preselectedId) }
       }
     })
   }, [preselectedId, setValue])
 
-  useEffect(() => {
-    if (watchInventarisId) {
-      const item = barangList.find(i => i.id === watchInventarisId)
-      setSelectedBarang(item ?? null)
-    }
+  const selectedBarang = useMemo(() => {
+    if (!watchInventarisId) return null
+    return barangList.find(i => i.id === watchInventarisId) ?? null
   }, [watchInventarisId, barangList])
 
   const showLokasi = watchJenisMutasi === 'pindah_lokasi'

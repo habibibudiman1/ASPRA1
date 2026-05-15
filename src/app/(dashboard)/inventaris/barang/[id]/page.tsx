@@ -49,7 +49,7 @@ export default async function DetailBarangPage({ params }: Props) {
     } catch {}
     const parts = raw.split('_')
     if (parts.length <= 1) return { raw }
-    const comp: any = {}
+    const comp: Record<string, string> = {}
     parts.forEach((p, i) => {
       if (p.includes('Procesor:')) comp.Processor = p.split(':')[1]
       else if (p.includes('MB:')) comp.Motherboard = p.split(':')[1]

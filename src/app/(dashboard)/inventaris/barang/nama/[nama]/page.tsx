@@ -39,8 +39,6 @@ export default async function DrilldownNamaPage({ params, searchParams }: Props)
 
   if (items.length === 0 && page === 1) notFound()
 
-  // Hitung agregat
-  const totalUnit = items.reduce((s, i) => s + i.jumlah_stok, 0)
 
   return (
     <div className="p-6 space-y-5">

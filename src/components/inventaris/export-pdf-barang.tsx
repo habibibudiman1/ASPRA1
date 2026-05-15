@@ -42,9 +42,22 @@ function rupiah(n: number) {
   return 'Rp ' + n.toLocaleString('id-ID')
 }
 
-function drawHeaderAndFooter(doc: any, title: string, filters?: { kategori?:string; search?:string; kondisi?:string }) {
-  const PW = doc.internal.pageSize.getWidth()
-  const PH = doc.internal.pageSize.getHeight()
+type JsPDFWithAutoTable = typeof import('jspdf').default.prototype & {
+  lastAutoTable?: { finalY: number }
+}
+
+type FilterParams = { kategori?: string; search?: string; kondisi?: string }
+
+// jsPDF runtime punya getNumberOfPages & getWidth/getHeight tapi TS types belum menyertakannya
+type JsPDFInternalExt = {
+  getNumberOfPages: () => number
+  pageSize: { getWidth: () => number; getHeight: () => number }
+}
+
+function drawHeaderAndFooter(doc: JsPDFWithAutoTable, title: string, filters?: FilterParams) {
+  const internal = doc.internal as unknown as JsPDFInternalExt
+  const PW = internal.pageSize.getWidth()
+  const PH = internal.pageSize.getHeight()
   const now = new Date()
   const dateStr = now.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
 
@@ -74,7 +87,7 @@ function drawHeaderAndFooter(doc: any, title: string, filters?: { kategori?:stri
   doc.rect(0, 42, PW, 2, 'F')
 
   // ── Footer ──
-  const pages = doc.internal.getNumberOfPages()
+  const pages = internal.getNumberOfPages()
   for (let p = 1; p <= pages; p++) {
     doc.setPage(p)
     doc.setDrawColor(...C.brand); doc.setLineWidth(0.4)
@@ -89,7 +102,7 @@ function drawHeaderAndFooter(doc: any, title: string, filters?: { kategori?:stri
 }
 
 // ─── Generator PDF: Semua Barang (landscape) ──────────────────────────────────
-async function generatePDFSemua(data: Inventaris[], filters: any) {
+async function generatePDFSemua(data: Inventaris[], filters: FilterParams) {
   const { default: jsPDF } = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
 
@@ -182,7 +195,7 @@ async function generatePDFSemua(data: Inventaris[], filters: any) {
 }
 
 // ─── Generator PDF: Per Lokasi (landscape, grouped) ──────────────────────────────────
-async function generatePDFPerLokasi(data: Inventaris[], filters: any) {
+async function generatePDFPerLokasi(data: Inventaris[], filters: FilterParams) {
   const { default: jsPDF } = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
 
@@ -260,7 +273,7 @@ async function generatePDFPerLokasi(data: Inventaris[], filters: any) {
       margin: { left:10, right:10 },
     })
     
-    currentY = (doc as any).lastAutoTable.finalY + 15
+    currentY = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY) + 15
   })
 
   drawHeaderAndFooter(doc, 'LAPORAN BARANG PER LOKASI', filters)

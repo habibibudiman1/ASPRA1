@@ -17,7 +17,7 @@ interface Props {
   type: 'inventaris' | 'tickets'
   label?: string
   // Optional filters untuk export subset
-  filters?: any
+  filters?: Record<string, string>
 }
 
 export function ExportPDFButton({ type, label = 'Export PDF', filters }: Props) {

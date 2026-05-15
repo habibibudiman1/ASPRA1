@@ -5,7 +5,7 @@
 // Thread komentar dengan realtime update via Supabase WebSocket
 // =============================================================================
 
-import { useState, useTransition, useEffect, useRef, useCallback } from 'react'
+import { useState, useTransition, useEffect, useRef, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Send, Lock, Unlock, Trash2, Loader2 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -31,8 +31,8 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
   const [isInternal, setIsInternal] = useState(false)
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
-  // Stable client instance — tidak dibuat ulang setiap render
-  const supabase = useRef(createClient()).current
+  // Stable client instance — useMemo aman diakses saat render
+  const supabase = useMemo(() => createClient(), [])
 
   const isAdmin = currentProfile.role === 'it_admin' || currentProfile.role === 'admin'
 
@@ -166,7 +166,7 @@ export function TicketComments({ ticketId, comments: initialComments, currentPro
                 {(isOwner || isAdmin) && (
                   <button
                     onClick={() => handleDelete(comment.id)}
-                    className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                    className="shrink-0 text-muted-foreground/40 hover:text-destructive active:text-destructive transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

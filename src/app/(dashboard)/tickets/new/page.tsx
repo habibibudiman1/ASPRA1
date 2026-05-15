@@ -3,7 +3,7 @@
 // Halaman buat tiket baru
 // =============================================================================
 
-import { redirect } from 'next/navigation'
+
 import { getCategories } from '@/lib/actions/category-actions'
 import { TicketForm } from '@/components/tickets/ticket-form'
 import type { Metadata } from 'next'

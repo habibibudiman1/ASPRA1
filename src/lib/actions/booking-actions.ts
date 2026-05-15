@@ -211,7 +211,7 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
 
 export async function approveBooking(id: string, catatanAdmin?: string): Promise<ActionResult> {
   try {
-    const { supabase, user, role } = await requireAuth()
+    const { user, role } = await requireAuth()
     if (role !== 'sarana') return { success: false, error: 'Hanya Sarana yang bisa menyetujui booking' }
 
     // Admin client: RLS hanya izinkan sarana SELECT/UPDATE booking miliknya sendiri
@@ -247,7 +247,7 @@ export async function approveBooking(id: string, catatanAdmin?: string): Promise
 
 export async function rejectBooking(id: string, catatanAdmin: string): Promise<ActionResult> {
   try {
-    const { supabase, user, role } = await requireAuth()
+    const { user, role } = await requireAuth()
     if (role !== 'sarana') return { success: false, error: 'Hanya Sarana yang bisa menolak booking' }
     if (!catatanAdmin || catatanAdmin.trim().length < 5) {
       return { success: false, error: 'Catatan alasan penolakan wajib diisi (minimal 5 karakter)' }

@@ -14,7 +14,6 @@ import { importInventarisFromCSV } from '@/lib/actions/inventaris-actions'
 
 const VALID_KATEGORI = ['elektronik', 'furniture', 'atk', 'kendaraan', 'alat_olahraga', 'alat_lab', 'lainnya']
 const VALID_KONDISI  = ['baik', 'rusak_ringan', 'rusak_berat']
-const VALID_SATUAN   = ['unit', 'buah', 'set', 'lembar', 'rim', 'pack', 'lusin', 'box', 'roll', 'meter', 'liter', 'kg', 'pasang']
 
 // Mapping nama kolom Excel → field internal
 const COL_MAP: Record<string, string> = {

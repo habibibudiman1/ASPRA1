@@ -7,9 +7,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Bell, Ticket, Building2, Package, Settings } from 'lucide-react'
 import { getNotifications } from '@/lib/actions/notification-actions'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatRelativeTime, formatDate } from '@/lib/utils'
+import { formatRelativeTime } from '@/lib/utils'
 import { NotificationsClient } from '@/components/shared/notifications-client'
 import type { Notification } from '@/lib/types'
 
@@ -31,11 +30,11 @@ export default async function NotificationsPage() {
   const unread = notifications.filter(n => !n.is_read)
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Bell className="h-6 w-6" /> Notifikasi
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Bell className="h-5 w-5 sm:h-6 sm:w-6" /> Notifikasi
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {unread.length > 0 ? `${unread.length} belum dibaca` : 'Semua sudah dibaca'}
@@ -74,32 +73,34 @@ function NotificationItem({ notif, Icon }: { notif: Notification; Icon: React.El
 
   const inner = (
     <div
-      className={`flex items-start gap-4 p-4 rounded-lg border transition-colors hover:bg-muted/30 ${
+      className={`flex items-start gap-3 p-3 sm:p-4 rounded-lg border transition-colors hover:bg-muted/30 active:bg-muted/30 ${
         !notif.is_read ? 'bg-primary/5 border-primary/20' : 'bg-card'
       }`}
     >
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
         !notif.is_read ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
       }`}>
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className={`text-sm font-semibold ${!notif.is_read ? '' : 'text-muted-foreground'}`}>
-              {notif.title}
-            </p>
-            <p className="text-sm text-muted-foreground mt-0.5">{notif.message}</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">{formatRelativeTime(notif.created_at)}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-sm font-semibold leading-snug ${!notif.is_read ? '' : 'text-muted-foreground'}`}>
+                {notif.title}
+              </p>
+              {!notif.is_read && (
+                <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0 h-4">Baru</Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+            <p className="text-[11px] text-muted-foreground/60 mt-1">{formatRelativeTime(notif.created_at)}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {!notif.is_read && (
-              <Badge className="bg-primary text-primary-foreground text-xs">Baru</Badge>
-            )}
-            {!notif.is_read && (
+          {!notif.is_read && (
+            <div className="shrink-0">
               <NotificationsClient action="mark-one" notifId={notif.id} label="✓" />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

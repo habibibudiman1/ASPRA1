@@ -5,9 +5,9 @@
 // Form booking ruangan — menerima ruanganList dari server component induk
 // =============================================================================
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { CalendarPlus, AlertTriangle, CheckCircle } from 'lucide-react'
@@ -50,12 +50,11 @@ interface Props {
 export default function BookingRuanganClient({ ruanganList }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [selectedRuangan, setSelectedRuangan] = useState<Ruangan | null>(null)
   const [bentrokWarning, setBentrokWarning] = useState<string | null>(null)
   const [isCheckingBentrok, setIsCheckingBentrok] = useState(false)
 
   const {
-    register, handleSubmit, watch, setValue,
+    register, handleSubmit, setValue, control,
     formState: { errors },
   } = useForm<CreateBookingSchema>({
     resolver: zodResolver(createBookingSchema),
@@ -66,15 +65,14 @@ export default function BookingRuanganClient({ ruanganList }: Props) {
     },
   })
 
-  const watchRuanganId  = watch('ruangan_id')
-  const watchTanggal    = watch('tanggal')
-  const watchJamMulai   = watch('jam_mulai')
-  const watchJamSelesai = watch('jam_selesai')
+  const watchRuanganId  = useWatch({ control, name: 'ruangan_id' })
+  const watchTanggal    = useWatch({ control, name: 'tanggal' })
+  const watchJamMulai   = useWatch({ control, name: 'jam_mulai' })
+  const watchJamSelesai = useWatch({ control, name: 'jam_selesai' })
 
-  useEffect(() => {
-    if (watchRuanganId) {
-      setSelectedRuangan(ruanganList.find(r => r.id === watchRuanganId) ?? null)
-    }
+  const selectedRuangan = useMemo(() => {
+    if (!watchRuanganId) return null
+    return ruanganList.find(r => r.id === watchRuanganId) ?? null
   }, [watchRuanganId, ruanganList])
 
   // Cek bentrok realtime

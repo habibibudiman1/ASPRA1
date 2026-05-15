@@ -9,15 +9,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, User, Calendar, Tag, AlertTriangle,
-  CheckCircle2, Clock, Star, ClipboardList, MessageSquare, History,
+  ArrowLeft, User, Calendar,
+  CheckCircle2, Clock, Star, MessageSquare, History,
 } from 'lucide-react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TicketStatusBadge } from './ticket-status-badge'
@@ -26,7 +23,7 @@ import { TicketComments } from './ticket-comments'
 import { TicketActivity } from './ticket-activity'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { updateTicketStatus, assignTicket, rateTicket } from '@/lib/actions/ticket-actions'
-import { formatDate, formatRelativeTime, getInitials, isSLABreached } from '@/lib/utils'
+import { formatDate, formatRelativeTime, isSLABreached } from '@/lib/utils'
 import { TICKET_STATUS_LIST } from '@/lib/constants'
 import type { TicketWithRelations, Profile, TicketStatus } from '@/lib/types'
 
@@ -75,17 +72,19 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
     })
   }
 
-  async function handleRate() {
-    const fd = new FormData()
-    fd.append('ticket_id', ticket.id)
-    fd.append('rating', String(rating))
-    const result = await rateTicket(fd)
-    if (result.success) {
-      toast.success('Rating berhasil dikirim. Tiket ditutup.')
-      router.refresh()
-    } else {
-      toast.error(result.error)
-    }
+  function handleRate() {
+    startTransition(async () => {
+      const fd = new FormData()
+      fd.append('ticket_id', ticket.id)
+      fd.append('rating', String(rating))
+      const result = await rateTicket(fd)
+      if (result.success) {
+        toast.success('Rating berhasil dikirim. Tiket ditutup.')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    })
   }
 
   return (
@@ -115,8 +114,8 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Kiri: Deskripsi + Komentar */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Kiri: Deskripsi + Komentar — order-2 di mobile (di bawah sidebar), col 1-2 di desktop */}
+        <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
           {/* Deskripsi */}
           <Card>
             <CardHeader><CardTitle className="text-base">Deskripsi Masalah</CardTitle></CardHeader>
@@ -188,8 +187,8 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
           </Tabs>
         </div>
 
-        {/* Kanan: Info & Actions */}
-        <div className="space-y-4">
+        {/* Kanan: Info & Actions — order-1 di mobile (muncul pertama), col 3 di desktop */}
+        <div className="space-y-4 order-1 lg:order-2">
           {/* Admin Actions */}
           {isAdmin && (
             <Card>
@@ -262,7 +261,7 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
                 { label: 'Diperbarui', icon: Clock, value: formatDate(ticket.updated_at) },
               ].map(({ label, icon: Icon, value }) => (
                 <div key={label} className="flex items-start gap-2">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground">{label}</p>
                     <p className="text-xs font-medium">{value}</p>

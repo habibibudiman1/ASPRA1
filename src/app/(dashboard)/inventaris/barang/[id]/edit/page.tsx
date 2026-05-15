@@ -63,7 +63,7 @@ export default function EditBarangPage({ params }: Props) {
           } catch {
             const raw = `${data.merk ?? ''} ${data.tipe_model ?? ''}`.trim()
             const parts = raw.split('_')
-            const comp: any = {}
+            const comp: Record<string, string> = {}
             parts.forEach((p, i) => {
               if (p.includes('Procesor:')) comp.processor = p.split(':')[1]
               else if (p.includes('MB:')) comp.mb = p.split(':')[1]

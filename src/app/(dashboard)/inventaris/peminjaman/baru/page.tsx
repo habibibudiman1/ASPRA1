@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useTransition, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { createPeminjamanBarangSchema, type CreatePeminjamanBarangSchema } from '@/lib/validators/inventaris-schema'
@@ -41,12 +41,13 @@ export default function PinjamBarangPage() {
   const [selectedBarang, setSelectedBarang] = useState<Inventaris | null>(null)
   const today = new Date().toISOString().split('T')[0]
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CreatePeminjamanBarangSchema>({
+  const { register, handleSubmit, setValue, control, formState: { errors } } = useForm<CreatePeminjamanBarangSchema>({
     resolver: zodResolver(createPeminjamanBarangSchema),
     defaultValues: { tanggal_pinjam: today, jumlah_dipinjam: 1 },
   })
 
-  const watchJumlah = watch('jumlah_dipinjam')
+  const watchJumlah = useWatch({ control, name: 'jumlah_dipinjam' })
+  const watchInventarisId = useWatch({ control, name: 'inventaris_id' })
 
   useEffect(() => {
     getInventarisList().then(list => {
@@ -150,7 +151,7 @@ export default function PinjamBarangPage() {
               </Label>
             </div>
             <Select
-              value={watch('inventaris_id') ?? ''}
+              value={watchInventarisId ?? ''}
               onValueChange={handleUnitChange}
             >
               <SelectTrigger>

@@ -9,7 +9,7 @@ import { Plus, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { getMutasi } from '@/lib/actions/mutasi-actions'
 import { getCurrentUser } from '@/lib/actions/user-actions'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+
 import { JENIS_MUTASI } from '@/lib/constants'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'

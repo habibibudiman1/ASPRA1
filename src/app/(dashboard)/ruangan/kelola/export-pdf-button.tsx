@@ -12,7 +12,6 @@ import { getAllRuanganForExport } from '@/lib/actions/export-ruangan-actions'
 import { toast } from 'sonner'
 
 const BRAND_COLOR        = [30, 58, 47]   as [number, number, number]  // #1E3A2F
-const BRAND_LIGHT        = [232, 245, 233] as [number, number, number]  // #E8F5E9
 const ACCENT_TERSEDIA    = [22, 163, 74]   as [number, number, number]  // green-600
 const ACCENT_MAINTENANCE = [217, 119, 6]   as [number, number, number]  // amber-600
 const ACCENT_TIDAK_AKTIF = [107, 114, 128] as [number, number, number]  // gray-500

@@ -56,7 +56,10 @@ export default async function TicketsPage({ searchParams }: PageProps) {
         </div>
         <div className="flex gap-2 items-center flex-shrink-0">
           {(profile?.role === 'it_admin' || profile?.role === 'admin') && (
-            <ExportPDFButton type="tickets" filters={{ status: params.status, priority: params.priority, category_id: params.category_id, search: params.search }} />
+            <ExportPDFButton type="tickets" filters={Object.fromEntries(
+                Object.entries({ status: params.status, priority: params.priority, category_id: params.category_id, search: params.search })
+                  .filter((entry): entry is [string, string] => entry[1] !== undefined)
+              )} />
           )}
           <Link href="/tickets/new" id="btn-buat-tiket" className={cn(buttonVariants({ variant: 'default' }), 'inline-flex items-center flex-shrink-0')}>
             <Plus className="mr-2 h-4 w-4" />

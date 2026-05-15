@@ -11,7 +11,7 @@ import { Save, Loader2, Timer, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { updateSLAPolicy } from '@/lib/actions/sla-actions'
 import { formatDuration } from '@/lib/utils'

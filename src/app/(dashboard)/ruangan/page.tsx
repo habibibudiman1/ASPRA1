@@ -6,7 +6,7 @@
 import type { Metadata } from 'next'
 import { Building2, CalendarDays, CheckCircle2, Wrench, Clock, Users } from 'lucide-react'
 import { getDashboardRuangan } from '@/lib/actions/ruangan-actions'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -87,13 +87,13 @@ export default async function DashboardRuanganPage() {
         <div className="grid gap-3">
           {stats.ruanganStatus.map(({ ruangan, booking_aktif, booking_berikutnya }) => {
             const isActive = !!booking_aktif
-            const isMaintenace = ruangan.status === 'maintenance'
+            const isMaintenance = ruangan.status === 'maintenance'
 
             return (
               <Card key={ruangan.id} className={cn(
                 'transition-all',
                 isActive && 'border-red-200 dark:border-red-800',
-                isMaintenace && 'border-amber-200 dark:border-amber-800 opacity-75'
+                isMaintenance && 'border-amber-200 dark:border-amber-800 opacity-75'
               )}>
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-start justify-between gap-4">
@@ -108,10 +108,10 @@ export default async function DashboardRuanganPage() {
                         </Badge>
                       </div>
 
-                      {isMaintenace ? (
+                      {isMaintenance ? (
                         <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">🔧 Sedang maintenance</p>
                       ) : isActive ? (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        <p className="text-sm text-red-600 dark:text-red-400 mt-1 line-clamp-2">
                           🔴 Dipakai oleh <strong>{(booking_aktif.user as { full_name: string }).full_name}</strong> — {booking_aktif.keperluan.slice(0, 50)} (s/d {booking_aktif.jam_selesai.slice(0, 5)})
                         </p>
                       ) : (
@@ -126,7 +126,7 @@ export default async function DashboardRuanganPage() {
                     </div>
 
                     <div className="flex-shrink-0">
-                      {isMaintenace ? (
+                      {isMaintenance ? (
                         <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">Maintenance</Badge>
                       ) : isActive ? (
                         <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">Terpakai</Badge>
