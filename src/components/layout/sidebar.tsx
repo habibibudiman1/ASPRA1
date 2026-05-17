@@ -5,6 +5,7 @@
 // Sidebar navigasi kiri — collapsible, mendukung grouped nav & 3 role
 // =============================================================================
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -96,12 +97,13 @@ export function Sidebar({ profile, collapsed, onToggle, mobile = false, onNaviga
           className="flex items-center gap-3 p-4 border-b flex-shrink-0"
           style={{ borderColor: 'hsl(var(--sidebar-border))' }}
         >
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0"
-            style={{ background: 'hsl(var(--sidebar-primary))', color: 'hsl(var(--sidebar-primary-foreground))' }}
-          >
-            IT
-          </div>
+          <Image
+            src="/logo-aspra.jpg"
+            alt="ASPRA Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-lg flex-shrink-0 object-contain"
+          />
           {!collapsed && (
             <div className="overflow-hidden">
               <p className="font-semibold text-sm truncate" style={{ color: 'hsl(var(--sidebar-foreground))' }}>

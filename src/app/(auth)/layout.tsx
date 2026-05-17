@@ -4,6 +4,7 @@
 // =============================================================================
 
 import type { Metadata } from "next";
+import Image from "next/image";
 import { APP_NAME, APP_ORG } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -34,12 +35,13 @@ export default function AuthLayout({
 
         {/* Logo & Nama */}
         <div className="relative z-10 flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg"
-            style={{ background: "hsl(145 40% 45%)" }}
-          >
-            IT
-          </div>
+          <Image
+            src="/logo-aspra.jpg"
+            alt="ASPRA Logo"
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-xl flex-shrink-0 object-contain bg-white"
+          />
           <div>
             <p className="font-bold text-base leading-tight">{APP_NAME}</p>
             <p className="text-xs opacity-60">{APP_ORG}</p>
@@ -100,12 +102,13 @@ export default function AuthLayout({
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-lg"
-              style={{ background: "hsl(160 36% 18%)" }}
-            >
-              IT
-            </div>
+            <Image
+              src="/logo-aspra.jpg"
+              alt="ASPRA Logo"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-xl flex-shrink-0 object-contain bg-white"
+            />
             <div>
               <p className="font-bold text-base">{APP_NAME}</p>
               <p className="text-xs text-muted-foreground">{APP_ORG}</p>
