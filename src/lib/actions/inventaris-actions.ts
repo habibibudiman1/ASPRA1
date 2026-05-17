@@ -292,11 +292,26 @@ export async function getInventarisById(id: string): Promise<Inventaris | null> 
 
 export async function getInventarisList(): Promise<Inventaris[]> {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('inventaris').select('*').eq('is_deleted', false)
-    .neq('kondisi', 'rusak_berat')
-    .order('nama_barang', { ascending: true })
-  return (data ?? []) as Inventaris[]
+  const all: Inventaris[] = []
+  const CHUNK = 1000
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('inventaris')
+      .select('*')
+      .eq('is_deleted', false)
+      .neq('kondisi', 'rusak_berat')
+      .order('nama_barang', { ascending: true })
+      .range(from, from + CHUNK - 1)
+
+    if (error || !data || data.length === 0) break
+    all.push(...(data as Inventaris[]))
+    if (data.length < CHUNK) break
+    from += CHUNK
+  }
+
+  return all
 }
 
 export async function generateKodeBarang(kategori: string): Promise<string> {

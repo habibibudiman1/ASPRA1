@@ -55,7 +55,7 @@ export default async function PeminjamanBarangPage({ searchParams }: Props) {
 
       {/* Filter status */}
       <div className="flex gap-2 flex-wrap">
-        {['all', 'menunggu', 'dipinjam', 'terlambat', 'dikembalikan'].map(s => (
+        {['all', 'menunggu', 'dipinjam', 'terlambat', 'dikembalikan', 'ditolak'].map(s => (
           <Button key={s} size="sm" variant={params.status === s || (!params.status && s === 'all') ? 'default' : 'outline'} asChild>
             <Link href={`/inventaris/peminjaman?status=${s}`}>
               {s === 'all' ? 'Semua' : PEMINJAMAN_BARANG_STATUS[s as keyof typeof PEMINJAMAN_BARANG_STATUS]?.label ?? s}
