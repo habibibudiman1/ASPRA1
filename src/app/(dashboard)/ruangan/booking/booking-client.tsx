@@ -45,9 +45,10 @@ function getMinDate() {
 
 interface Props {
   ruanganList: Ruangan[]
+  isStaff: boolean
 }
 
-export default function BookingRuanganClient({ ruanganList }: Props) {
+export default function BookingRuanganClient({ ruanganList, isStaff }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [bentrokWarning, setBentrokWarning] = useState<string | null>(null)
@@ -118,7 +119,9 @@ export default function BookingRuanganClient({ ruanganList }: Props) {
       <div>
         <h1 className="text-2xl font-bold">Booking Ruangan</h1>
         <p className="text-muted-foreground text-sm">
-          Ajukan peminjaman ruangan (maks. {BOOKING_RULES.MAX_DAYS_AHEAD} hari ke depan)
+          {isStaff
+            ? `Ajukan peminjaman ruangan (maks. ${BOOKING_RULES.MAX_DAYS_AHEAD} hari ke depan)`
+            : 'Ajukan peminjaman ruangan'}
         </p>
       </div>
 
@@ -167,7 +170,7 @@ export default function BookingRuanganClient({ ruanganList }: Props) {
             id="tanggal"
             type="date"
             min={getMinDate()}
-            max={getMaxDate()}
+            max={isStaff ? getMaxDate() : undefined}
             {...register('tanggal')}
           />
           {errors.tanggal && (

@@ -31,7 +31,7 @@ export type BookingStatus = 'menunggu' | 'disetujui' | 'ditolak' | 'selesai' | '
 // Inventaris
 export type InventarisKategori = 'elektronik' | 'furniture' | 'atk' | 'kendaraan' | 'alat_olahraga' | 'alat_lab' | 'lainnya'
 export type InventarisKondisi  = 'baik' | 'rusak_ringan' | 'rusak_berat'
-export type PeminjamanBarangStatus = 'menunggu' | 'dipinjam' | 'dikembalikan' | 'terlambat' | 'hilang'
+export type PeminjamanBarangStatus = 'menunggu' | 'dipinjam' | 'dikembalikan' | 'terlambat' | 'hilang' | 'ditolak'
 export type KondisiSaatKembali = 'baik' | 'rusak_ringan' | 'rusak_berat' | 'hilang'
 export type JenisMutasi = 'masuk' | 'keluar' | 'pindah_lokasi' | 'rusak' | 'hilang' | 'disposal' | 'perbaikan'
 export type NotifikasiTipe = 'tiket' | 'booking_ruangan' | 'peminjaman_barang' | 'inventaris' | 'sistem'

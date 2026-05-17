@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type {
   ActionResult, PeminjamanBarang, PeminjamanBarangWithRelations, PaginatedResult, PeminjamanBarangFilters,
 } from '@/lib/types'
@@ -59,8 +59,8 @@ export async function getPeminjamanBarang(
 }
 
 export async function getPendingPeminjamanBarang(): Promise<PeminjamanBarangWithRelations[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
+  const adminClient = await createAdminClient()
+  const { data } = await adminClient
     .from('peminjaman_barang')
     .select('*, inventaris(*), user:user_id(*)')
     .eq('status', 'menunggu')
@@ -174,7 +174,7 @@ export async function approvePeminjamanBarang(id: string, catatan?: string): Pro
 
     const { data: peminjaman } = await supabase
       .from('peminjaman_barang')
-      .select('*, inventaris(*), user:user_id(id)')
+      .select('*, inventaris(*), user:user_id(id, full_name)')
       .eq('id', id).single()
     if (!peminjaman) return { success: false, error: 'Peminjaman tidak ditemukan' }
     if (peminjaman.status !== 'menunggu') return { success: false, error: 'Peminjaman sudah tidak dalam status menunggu' }
@@ -200,7 +200,7 @@ export async function approvePeminjamanBarang(id: string, catatan?: string): Pro
         jumlah: peminjaman.jumlah_dipinjam,
         stok_sebelum: inv.jumlah_stok,
         stok_sesudah: inv.jumlah_stok - peminjaman.jumlah_dipinjam,
-        keterangan: `Dipinjam oleh ${peminjaman.user?.id} (peminjaman #${id})`,
+        keterangan: `Dipinjam oleh ${peminjaman.user?.full_name ?? peminjaman.user?.id} (peminjaman #${id})`,
         user_id: user.id,
         tanggal: new Date().toISOString().split('T')[0],
       })
@@ -240,7 +240,7 @@ export async function rejectPeminjamanBarang(id: string, catatan: string): Promi
 
     const { error } = await supabase
       .from('peminjaman_barang')
-      .update({ status: 'dikembalikan', catatan_sarana: catatan, approved_by: user.id, approved_at: new Date().toISOString() })
+      .update({ status: 'ditolak', catatan_sarana: catatan, approved_by: user.id, approved_at: new Date().toISOString() })
       .eq('id', id)
     if (error) return { success: false, error: error.message }
 
@@ -299,36 +299,50 @@ export async function konfirmasiPengembalian(
     const { data: inv } = await supabase
       .from('inventaris').select('jumlah_stok').eq('id', peminjaman.inventaris_id).single()
     if (inv) {
-      const stokBaru = inv.jumlah_stok + peminjaman.jumlah_dipinjam
-      await supabase.from('inventaris').update({ jumlah_stok: stokBaru }).eq('id', peminjaman.inventaris_id)
-
-      // Catat mutasi masuk
-      await supabase.from('mutasi_barang').insert({
-        inventaris_id: peminjaman.inventaris_id,
-        jenis_mutasi: 'masuk',
-        jumlah: peminjaman.jumlah_dipinjam,
-        stok_sebelum: inv.jumlah_stok,
-        stok_sesudah: stokBaru,
-        keterangan: `Dikembalikan dari peminjaman #${id}, kondisi: ${kondisiSaatKembali}`,
-        user_id: user.id,
-        tanggal: today,
-      })
-
-      // Jika rusak, tambah mutasi rusak
-      if (['rusak_ringan', 'rusak_berat'].includes(kondisiSaatKembali)) {
+      if (kondisiSaatKembali === 'hilang') {
+        // Barang hilang — stok tidak dikembalikan, catat mutasi hilang
         await supabase.from('mutasi_barang').insert({
           inventaris_id: peminjaman.inventaris_id,
-          jenis_mutasi: 'rusak',
+          jenis_mutasi: 'hilang',
           jumlah: peminjaman.jumlah_dipinjam,
-          stok_sebelum: stokBaru,
-          stok_sesudah: stokBaru,
-          keterangan: `Kondisi saat kembali: ${kondisiSaatKembali}`,
+          stok_sebelum: inv.jumlah_stok,
+          stok_sesudah: inv.jumlah_stok,
+          keterangan: `Barang hilang dari peminjaman #${id}`,
           user_id: user.id,
           tanggal: today,
         })
-        // Update kondisi inventaris jika rusak berat
-        if (kondisiSaatKembali === 'rusak_berat') {
-          await supabase.from('inventaris').update({ kondisi: 'rusak_berat' }).eq('id', peminjaman.inventaris_id)
+      } else {
+        const stokBaru = inv.jumlah_stok + peminjaman.jumlah_dipinjam
+        await supabase.from('inventaris').update({ jumlah_stok: stokBaru }).eq('id', peminjaman.inventaris_id)
+
+        // Catat mutasi masuk
+        await supabase.from('mutasi_barang').insert({
+          inventaris_id: peminjaman.inventaris_id,
+          jenis_mutasi: 'masuk',
+          jumlah: peminjaman.jumlah_dipinjam,
+          stok_sebelum: inv.jumlah_stok,
+          stok_sesudah: stokBaru,
+          keterangan: `Dikembalikan dari peminjaman #${id}, kondisi: ${kondisiSaatKembali}`,
+          user_id: user.id,
+          tanggal: today,
+        })
+
+        // Jika rusak, tambah mutasi rusak
+        if (['rusak_ringan', 'rusak_berat'].includes(kondisiSaatKembali)) {
+          await supabase.from('mutasi_barang').insert({
+            inventaris_id: peminjaman.inventaris_id,
+            jenis_mutasi: 'rusak',
+            jumlah: peminjaman.jumlah_dipinjam,
+            stok_sebelum: stokBaru,
+            stok_sesudah: stokBaru,
+            keterangan: `Kondisi saat kembali: ${kondisiSaatKembali}`,
+            user_id: user.id,
+            tanggal: today,
+          })
+          // Update kondisi inventaris jika rusak berat
+          if (kondisiSaatKembali === 'rusak_berat') {
+            await supabase.from('inventaris').update({ kondisi: 'rusak_berat' }).eq('id', peminjaman.inventaris_id)
+          }
         }
       }
     }

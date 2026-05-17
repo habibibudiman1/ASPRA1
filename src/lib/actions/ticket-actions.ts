@@ -212,6 +212,7 @@ export async function createTicket(formData: FormData): Promise<ActionResult<{ i
         ticket_id: ticket.id,
         title: 'Tiket Baru Masuk',
         message: `${profile.full_name} membuat tiket baru: "${title}"`,
+        tipe: 'tiket',
       }))
       await supabase.from('notifications').insert(notifications)
     }
@@ -328,6 +329,7 @@ export async function updateTicketStatus(
         ticket_id: ticketId,
         title: `Status Tiket Diperbarui`,
         message: `Tiket "${ticket.title}" — Status: ${statusLabels[newStatus] ?? newStatus}`,
+        tipe: 'tiket',
       })
     }
 

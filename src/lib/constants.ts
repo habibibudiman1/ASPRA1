@@ -244,6 +244,11 @@ export const PEMINJAMAN_BARANG_STATUS: Record<PeminjamanBarangStatus, { label: s
     color: '#7c3aed',
     bgColor: '#ede9fe',
   },
+  ditolak: {
+    label: 'Ditolak',
+    color: '#b91c1c',
+    bgColor: '#fee2e2',
+  },
 }
 
 // =============================================================================
