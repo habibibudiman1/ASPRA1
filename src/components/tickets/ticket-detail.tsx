@@ -119,8 +119,33 @@ export function TicketDetail({ ticket, currentProfile, admins }: TicketDetailPro
           {/* Deskripsi */}
           <Card>
             <CardHeader><CardTitle className="text-base">Deskripsi Masalah</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{ticket.description}</p>
+
+              {/* Lampiran Gambar */}
+              {ticket.attachments && ticket.attachments.length > 0 && (
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-3 text-muted-foreground">Lampiran Gambar</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {ticket.attachments.map((attachment) => (
+                      <a
+                        key={attachment.id}
+                        href={attachment.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative group rounded-lg overflow-hidden border bg-muted aspect-video block"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={attachment.file_url}
+                          alt={attachment.file_name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
