@@ -120,6 +120,86 @@ export async function uploadTicketAttachment(
 }
 
 // =============================================================================
+// UPLOAD GAMBAR SAAT BUAT TIKET BARU
+// Hanya menerima file gambar (image/*), dipakai langsung setelah tiket dibuat.
+// =============================================================================
+
+export async function uploadTicketImages(
+  ticketId: string,
+  formData: FormData
+): Promise<ActionResult<TicketAttachment[]>> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Tidak terautentikasi' }
+
+    const files = formData.getAll('files') as File[]
+    if (files.length === 0) return { success: false, error: 'Tidak ada gambar yang dipilih' }
+    if (files.length > 3) return { success: false, error: 'Maksimal 3 gambar per tiket' }
+
+    const attachments: TicketAttachment[] = []
+    const errors: string[] = []
+
+    for (const file of files) {
+      // Hanya izinkan file gambar
+      if (!file.type.startsWith('image/')) {
+        errors.push(`${file.name}: bukan file gambar`)
+        continue
+      }
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        errors.push(`${file.name}: ukuran melebihi 5MB`)
+        continue
+      }
+
+      const result = await uploadFile(
+        STORAGE_BUCKETS.ATTACHMENTS,
+        `tickets/${ticketId}`,
+        file,
+        user.id
+      )
+
+      if ('error' in result) {
+        errors.push(`${file.name}: ${result.error}`)
+        continue
+      }
+
+      const { data, error } = await supabase
+        .from('ticket_attachments')
+        .insert({
+          ticket_id: ticketId,
+          uploaded_by: user.id,
+          file_name: file.name,
+          file_url: result.url,
+          file_size: file.size,
+          mime_type: file.type,
+        })
+        .select('*')
+        .single()
+
+      if (error) {
+        errors.push(`${file.name}: Gagal menyimpan ke database`)
+        await supabase.storage.from(STORAGE_BUCKETS.ATTACHMENTS).remove([result.path])
+        continue
+      }
+      attachments.push(data as TicketAttachment)
+    }
+
+    if (errors.length > 0 && attachments.length === 0) {
+      return { success: false, error: errors.join(', ') }
+    }
+
+    revalidatePath(`/tickets/${ticketId}`)
+    return {
+      success: true,
+      data: attachments,
+      ...(errors.length > 0 ? { error: `Beberapa gambar gagal diupload: ${errors.join(', ')}` } : {}),
+    }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal upload gambar' }
+  }
+}
+
+// =============================================================================
 // DELETE ATTACHMENT TIKET
 // =============================================================================
 
