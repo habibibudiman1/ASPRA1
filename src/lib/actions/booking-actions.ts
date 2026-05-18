@@ -44,8 +44,8 @@ export async function getBookings(
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  // Staff, IT, dan Sarana hanya bisa lihat miliknya — Admin lihat semua
-  if (role !== 'admin') {
+  // Staff hanya bisa lihat miliknya — Admin, IT Admin, dan Sarana lihat semua
+  if (role !== 'admin' && role !== 'it_admin' && role !== 'sarana') {
     query = query.eq('user_id', user.id)
   }
 

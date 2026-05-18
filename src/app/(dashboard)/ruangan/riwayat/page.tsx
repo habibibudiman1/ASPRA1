@@ -36,7 +36,7 @@ function BookingStatusBadge({ status }: { status: string }) {
 export default async function RiwayatBookingPage({ searchParams }: Props) {
   const params = await searchParams
   const profile = await getCurrentUser()
-  const isAdmin = profile?.role === 'it_admin' || profile?.role === 'admin'
+  const canViewAll = profile?.role === 'it_admin' || profile?.role === 'admin' || profile?.role === 'sarana'
   const page = Number(params.page ?? 1)
 
   const { data: bookings, pagination } = await getBookings(
@@ -51,7 +51,7 @@ export default async function RiwayatBookingPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold">Riwayat Booking</h1>
           <p className="text-muted-foreground text-sm">
-            {isAdmin ? 'Semua booking ruangan' : 'Booking ruangan milik Anda'}
+            {canViewAll ? 'Semua booking ruangan' : 'Booking ruangan milik Anda'}
           </p>
         </div>
         <Button asChild>
@@ -97,12 +97,12 @@ export default async function RiwayatBookingPage({ searchParams }: Props) {
                       {format(new Date(b.tanggal), 'EEEE, d MMMM yyyy', { locale: id })} · {b.jam_mulai.slice(0, 5)}–{b.jam_selesai.slice(0, 5)}
                     </p>
                     <p className="text-sm truncate">{b.keperluan}</p>
-                    {isAdmin && (
+                    {canViewAll && (
                       <p className="text-xs text-muted-foreground">Diajukan oleh: {b.user?.full_name}</p>
                     )}
                     {b.catatan_admin && (
                       <p className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-1 rounded">
-                        📝 Admin: {b.catatan_admin}
+                        📝 Catatan: {b.catatan_admin}
                       </p>
                     )}
                   </div>
