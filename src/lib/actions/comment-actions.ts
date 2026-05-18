@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { ActionResult } from '@/lib/types'
 import { createCommentSchema } from '@/lib/validators/comment-schema'
 
@@ -73,17 +73,33 @@ export async function addComment(formData: FormData): Promise<ActionResult> {
     if (ticket.reporter_id !== user.id) notifyUserIds.add(ticket.reporter_id)
     if (ticket.assignee_id && ticket.assignee_id !== user.id) notifyUserIds.add(ticket.assignee_id)
 
+    // Jika yang berkomentar adalah staff/reporter, notifikasi ke semua IT Admin & Admin yang belum ada di set
+    if (profile.role === 'staff' || profile.role === 'sarana') {
+      // Gunakan adminClient — staff tidak bisa query profiles lain (RLS profiles_select_own)
+      const adminClient = await createAdminClient()
+      const { data: admins } = await adminClient
+        .from('profiles')
+        .select('id')
+        .in('role', ['it_admin', 'admin'])
+        .eq('is_active', true)
+      ;(admins ?? []).forEach((a) => {
+        if (a.id !== user.id) notifyUserIds.add(a.id)
+      })
+    }
+
     if (notifyUserIds.size > 0 && !is_internal) {
       const notifications = Array.from(notifyUserIds).map((uid) => ({
         user_id: uid,
         ticket_id,
         title: 'Komentar Baru',
         message: `${profile.full_name} menambahkan komentar pada tiket "${ticket.title}"`,
+        tipe: 'tiket',
       }))
       await supabase.from('notifications').insert(notifications)
     }
 
     revalidatePath(`/tickets/${ticket_id}`)
+    revalidatePath('/', 'layout')
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }

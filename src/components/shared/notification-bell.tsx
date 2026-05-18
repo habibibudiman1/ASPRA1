@@ -121,43 +121,54 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`px-4 py-3 hover:bg-muted/50 transition-colors ${!notif.is_read ? 'bg-primary/5' : ''}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      {notif.ticket_id ? (
-                        <Link
-                          href={`/tickets/${notif.ticket_id}`}
-                          className="block"
-                          onClick={() => { handleMarkRead(notif.id); setOpen(false) }}
+              {notifications.map((notif) => {
+                // Tentukan link berdasarkan tipe notifikasi
+                const href = notif.ticket_id
+                  ? `/tickets/${notif.ticket_id}`
+                  : notif.tipe === 'booking_ruangan'
+                    ? '/ruangan/approval'
+                    : notif.tipe === 'peminjaman_barang'
+                      ? '/inventaris/peminjaman'
+                      : null
+
+                return (
+                  <div
+                    key={notif.id}
+                    className={`px-4 py-3 hover:bg-muted/50 transition-colors ${!notif.is_read ? 'bg-primary/5' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        {href ? (
+                          <Link
+                            href={href}
+                            className="block"
+                            onClick={() => { handleMarkRead(notif.id); setOpen(false) }}
+                          >
+                            <p className="text-xs font-semibold truncate">{notif.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">{formatRelativeTime(notif.created_at)}</p>
+                          </Link>
+                        ) : (
+                          <>
+                            <p className="text-xs font-semibold">{notif.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{notif.message}</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">{formatRelativeTime(notif.created_at)}</p>
+                          </>
+                        )}
+                      </div>
+                      {!notif.is_read && (
+                        <button
+                          onClick={() => handleMarkRead(notif.id)}
+                          className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors mt-0.5"
+                          title="Tandai dibaca"
                         >
-                          <p className="text-xs font-semibold truncate">{notif.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-xs text-muted-foreground/60 mt-1">{formatRelativeTime(notif.created_at)}</p>
-                        </Link>
-                      ) : (
-                        <>
-                          <p className="text-xs font-semibold">{notif.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{notif.message}</p>
-                          <p className="text-xs text-muted-foreground/60 mt-1">{formatRelativeTime(notif.created_at)}</p>
-                        </>
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
                       )}
                     </div>
-                    {!notif.is_read && (
-                      <button
-                        onClick={() => handleMarkRead(notif.id)}
-                        className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors mt-0.5"
-                        title="Tandai dibaca"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                      </button>
-                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </ScrollArea>

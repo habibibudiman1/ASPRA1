@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type {
   ActionResult,
   TicketWithRelations,
@@ -56,8 +56,18 @@ export async function getTickets(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Tidak terautentikasi')
 
-  // Baca role dari JWT app_metadata — tidak perlu query profiles
-  const role = (user.app_metadata?.role as string | undefined) ?? 'staff'
+  // Baca role dari JWT app_metadata — fallback ke profiles table jika hook belum aktif
+  let role = (user.app_metadata?.role as string | undefined)
+  if (!role || role === 'staff') {
+    // Double-check dari profiles untuk memastikan role IT Admin / Admin tidak salah diperlakukan sebagai staff
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    if (profileData?.role) role = profileData.role
+  }
+  role = role ?? 'staff'
 
   // Hitung offset untuk pagination
   const offset = (page - 1) * perPage
@@ -200,7 +210,9 @@ export async function createTicket(formData: FormData): Promise<ActionResult<{ i
     })
 
     // Kirim notifikasi ke semua IT Admin dan Admin
-    const { data: admins } = await supabase
+    // Gunakan adminClient agar bisa query profiles meski dibuat oleh staff (RLS profiles_select_own)
+    const adminClient = await createAdminClient()
+    const { data: admins } = await adminClient
       .from('profiles')
       .select('id')
       .in('role', ['it_admin', 'admin'])
@@ -336,6 +348,7 @@ export async function updateTicketStatus(
     revalidatePath(`/tickets/${ticketId}`)
     revalidatePath('/tickets')
     revalidatePath('/dashboard')
+    revalidatePath('/', 'layout')
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
@@ -393,6 +406,7 @@ export async function assignTicket(ticketId: string, assigneeId: string | null):
 
     revalidatePath(`/tickets/${ticketId}`)
     revalidatePath('/tickets')
+    revalidatePath('/', 'layout')
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
@@ -456,8 +470,29 @@ export async function rateTicket(formData: FormData): Promise<ActionResult> {
       metadata: { rating_comment },
     })
 
+    // Notifikasi ke IT Admin & Admin tentang rating baru
+    // Gunakan adminClient — staff tidak bisa query profiles lain (RLS)
+    const adminClientForRating = await createAdminClient()
+    const { data: admins } = await adminClientForRating
+      .from('profiles')
+      .select('id')
+      .in('role', ['it_admin', 'admin'])
+      .eq('is_active', true)
+
+    if (admins && admins.length > 0) {
+      const ratingNotifs = admins.map((admin) => ({
+        user_id: admin.id,
+        ticket_id,
+        title: 'Rating Baru Diterima',
+        message: `${profile.full_name} memberikan rating ${rating}⭐ untuk tiket yang telah diselesaikan`,
+        tipe: 'tiket',
+      }))
+      await supabase.from('notifications').insert(ratingNotifs)
+    }
+
     revalidatePath(`/tickets/${ticket_id}`)
     revalidatePath('/tickets')
+    revalidatePath('/', 'layout')
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }

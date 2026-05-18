@@ -140,7 +140,9 @@ export async function createPeminjamanBarang(formData: FormData): Promise<Action
     if (error) return { success: false, error: error.message }
 
     // Notifikasi ke semua Sarana dan Admin
-    const { data: penerima } = await supabase
+    // Gunakan adminClient — staff tidak bisa query profiles lain (RLS profiles_select_own)
+    const adminClientNotif = await createAdminClient()
+    const { data: penerima } = await adminClientNotif
       .from('profiles').select('id')
       .in('role', ['sarana', 'admin'])
       .eq('is_active', true)

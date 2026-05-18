@@ -143,11 +143,21 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
       return { success: false, error: `Jumlah peserta melebihi kapasitas ruangan (${ruangan.kapasitas} orang)` }
     }
 
-    // Cek booking aktif staff (maks 3)
-    const { count: activeCount } = await supabase
-      .from('peminjaman_ruangan').select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id).in('status', ['menunggu', 'disetujui'])
-    if ((activeCount ?? 0) >= BOOKING_RULES.MAX_ACTIVE_BOOKINGS) {
+    // Cek booking aktif staff (maks 3) — hanya booking yang masih aktif/akan datang
+    const today = new Date().toISOString().slice(0, 10)   // 'YYYY-MM-DD'
+    const currentTime = new Date().toTimeString().slice(0, 8) // 'HH:mm:ss'
+    const { data: activeBookings } = await supabase
+      .from('peminjaman_ruangan')
+      .select('id, tanggal, jam_selesai')
+      .eq('user_id', user.id)
+      .in('status', ['menunggu', 'disetujui'])
+    // Filter di sisi aplikasi: hanya booking yang belum selesai
+    const stillActive = (activeBookings ?? []).filter((b) => {
+      if (b.tanggal > today) return true           // tanggal mendatang
+      if (b.tanggal === today && b.jam_selesai > currentTime) return true  // hari ini & belum selesai
+      return false
+    })
+    if (stillActive.length >= BOOKING_RULES.MAX_ACTIVE_BOOKINGS) {
       return { success: false, error: `Maksimal ${BOOKING_RULES.MAX_ACTIVE_BOOKINGS} booking aktif secara bersamaan` }
     }
 
@@ -181,7 +191,9 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
     if (error) return { success: false, error: error.message }
 
     // Notifikasi ke semua Sarana dan Admin (mereka yang handle approval)
-    const { data: penerima } = await supabase
+    // Gunakan adminClient — staff tidak bisa query profiles lain (RLS)
+    const adminClientNotif = await createAdminClient()
+    const { data: penerima } = await adminClientNotif
       .from('profiles').select('id')
       .in('role', ['sarana', 'admin'])
       .eq('is_active', true)
@@ -199,6 +211,7 @@ export async function createBooking(formData: FormData): Promise<ActionResult<Pe
 
     revalidatePath('/ruangan/riwayat')
     revalidatePath('/ruangan/approval')
+    revalidatePath('/', 'layout')
     return { success: true, data: data as PeminjamanRuangan }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
@@ -239,6 +252,7 @@ export async function approveBooking(id: string, catatanAdmin?: string): Promise
 
     revalidatePath('/ruangan/approval')
     revalidatePath('/ruangan/riwayat')
+    revalidatePath('/', 'layout')
     return { success: true }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
