@@ -358,3 +358,102 @@ export async function konfirmasiPengembalian(
   }
 }
 
+// =============================================================================
+// AJUKAN PENGEMBALIAN (Staff/User — lapor barang sudah dikembalikan)
+// =============================================================================
+
+export async function ajukanPengembalian(id: string): Promise<ActionResult> {
+  try {
+    const { supabase, user, role } = await requireAuth()
+
+    // Hanya staff/user biasa yang bisa lapor pengembalian lewat aksi ini
+    // Sarana konfirmasi lewat konfirmasiPengembalian()
+    if (role === 'sarana') {
+      return { success: false, error: 'Gunakan "Terima Kembali" untuk konfirmasi pengembalian oleh Sarana' }
+    }
+
+    // Ambil data peminjaman — harus milik user ini
+    const { data: peminjaman } = await supabase
+      .from('peminjaman_barang')
+      .select('*, inventaris(nama_barang, satuan, jumlah_stok)')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!peminjaman) return { success: false, error: 'Peminjaman tidak ditemukan atau bukan milik Anda' }
+    if (!['dipinjam', 'terlambat'].includes(peminjaman.status)) {
+      return { success: false, error: 'Hanya barang dengan status Dipinjam atau Terlambat yang bisa dikembalikan' }
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+
+    // Tandai sebagai dikembalikan — kondisi default 'baik', Sarana bisa update nanti jika ada kerusakan
+    const { error } = await supabase
+      .from('peminjaman_barang')
+      .update({
+        status: 'dikembalikan',
+        kondisi_saat_kembali: 'baik',
+        returned_at: new Date().toISOString(),
+        tanggal_dikembalikan_aktual: today,
+      })
+      .eq('id', id)
+
+    if (error) return { success: false, error: error.message }
+
+    // Update stok inventaris
+    const stokBaru = (peminjaman.inventaris?.jumlah_stok ?? 0) + peminjaman.jumlah_dipinjam
+    await supabase
+      .from('inventaris')
+      .update({ jumlah_stok: stokBaru })
+      .eq('id', peminjaman.inventaris_id)
+
+    // Catat mutasi masuk
+    await supabase.from('mutasi_barang').insert({
+      inventaris_id: peminjaman.inventaris_id,
+      jenis_mutasi: 'masuk',
+      jumlah: peminjaman.jumlah_dipinjam,
+      stok_sebelum: peminjaman.inventaris?.jumlah_stok ?? 0,
+      stok_sesudah: stokBaru,
+      keterangan: `Dikembalikan oleh user dari peminjaman #${id}`,
+      user_id: user.id,
+      tanggal: today,
+    })
+
+    revalidatePath('/inventaris/peminjaman')
+    revalidatePath('/inventaris/barang')
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Terjadi kesalahan' }
+  }
+}
+
+// =============================================================================
+// MARK TERLAMBAT — dipanggil saat halaman dimuat untuk auto-upgrade status
+// =============================================================================
+
+export async function markOverduePeminjaman(): Promise<{ updated: number }> {
+  try {
+    const adminClient = await createAdminClient()
+    const today = new Date().toISOString().split('T')[0]
+
+    // Temukan semua peminjaman 'dipinjam' yang sudah melewati tanggal estimasi
+    const { data: overdue } = await adminClient
+      .from('peminjaman_barang')
+      .select('id')
+      .eq('status', 'dipinjam')
+      .lt('tanggal_kembali_estimasi', today)
+
+    if (!overdue || overdue.length === 0) return { updated: 0 }
+
+    const ids = overdue.map(r => r.id)
+    await adminClient
+      .from('peminjaman_barang')
+      .update({ status: 'terlambat' })
+      .in('id', ids)
+
+    revalidatePath('/inventaris/peminjaman')
+    return { updated: ids.length }
+  } catch {
+    return { updated: 0 }
+  }
+}

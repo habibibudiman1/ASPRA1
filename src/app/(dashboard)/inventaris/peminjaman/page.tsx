@@ -6,7 +6,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ShoppingCart, Plus, Clock } from 'lucide-react'
-import { getPeminjamanBarang } from '@/lib/actions/peminjaman-barang-actions'
+import { getPeminjamanBarang, markOverduePeminjaman } from '@/lib/actions/peminjaman-barang-actions'
 import { getCurrentUser } from '@/lib/actions/user-actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +29,9 @@ export default async function PeminjamanBarangPage({ searchParams }: Props) {
   const isSarana = profile?.role === 'sarana'
   const isAdmin = profile?.role === 'it_admin' || profile?.role === 'admin'
   const page = Number(params.page ?? 1)
+
+  // Auto-upgrade peminjaman 'dipinjam' yang sudah melewati estimasi → 'terlambat'
+  await markOverduePeminjaman()
 
   const { data: peminjaman, pagination } = await getPeminjamanBarang(
     { status: params.status as never },
@@ -113,7 +116,12 @@ export default async function PeminjamanBarangPage({ searchParams }: Props) {
                     </div>
 
                     {/* Actions — client component */}
-                    <PeminjamanBarangActions peminjaman={p} isSarana={isSarana} isAdmin={isAdmin} />
+                    <PeminjamanBarangActions
+                      peminjaman={p}
+                      isSarana={isSarana}
+                      isAdmin={isAdmin}
+                      currentUserId={profile?.id ?? ''}
+                    />
                   </div>
                 </CardContent>
               </Card>
