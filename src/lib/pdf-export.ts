@@ -54,7 +54,7 @@ export function exportInventarisToPDF(data: Inventaris[], title: string) {
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [249, 250, 251] },
-    willDrawCell: (data) => {
+    willDrawCell: (data: any) => {
       // Bold baris total
       if (data.row.index === tableRows.length - 1) {
         data.cell.styles.fontStyle = 'bold'

@@ -194,7 +194,7 @@ export function ExportPDFButton() {
         },
         alternateRowStyles: { fillColor: ROW_ALT },
         // Warnai kolom Status secara dinamis
-        didParseCell(data) {
+        didParseCell(data: any) {
           if (data.section === 'body' && data.column.index === 5) {
             const raw = ruanganList[data.row.index]?.status ?? ''
             const col = statusColor(raw)
@@ -203,7 +203,7 @@ export function ExportPDFButton() {
           }
         },
         // Tambah latar belakang ringan pada baris maintenance
-        willDrawCell(data) {
+        willDrawCell(data: any) {
           if (data.section === 'body') {
             const raw = ruanganList[data.row.index]?.status ?? ''
             if (raw === 'maintenance') {
