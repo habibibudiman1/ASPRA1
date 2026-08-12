@@ -36,61 +36,82 @@ const STATUS_COLOR: Record<string,[number,number,number]> = {
   selesai: C.mid, dibatalkan: C.light,
 }
 
-type JsPDFWithAutoTable = typeof import('jspdf').default.prototype & {
-  lastAutoTable?: { finalY: number }
-}
-
-type JsPDFInternalExt = {
+interface PDFDocHelper {
+  internal: {
+    pageSize: { getWidth: () => number; getHeight: () => number }
+  }
   getNumberOfPages: () => number
-  pageSize: { getWidth: () => number; getHeight: () => number }
+  setFillColor: (...args: number[]) => void
+  rect: (x: number, y: number, w: number, h: number, style?: string) => void
+  roundedRect: (x: number, y: number, w: number, h: number, rx: number, ry: number, style?: string) => void
+  setFont: (fontName: string, fontStyle?: string) => void
+  setFontSize: (size: number) => void
+  setTextColor: (...args: number[]) => void
+  text: (text: string, x: number, y: number, options?: { align?: string }) => void
+  setPage: (pageNumber: number) => void
+  setDrawColor: (...args: number[]) => void
+  setLineWidth: (width: number) => void
+  line: (x1: number, y1: number, x2: number, y2: number) => void
 }
 
-function drawHeaderAndFooter(doc: JsPDFWithAutoTable, title: string, subtitle?: string) {
-  const internal = doc.internal as unknown as JsPDFInternalExt
-  const PW = internal.pageSize.getWidth()
-  const PH = internal.pageSize.getHeight()
+interface AutoTableData {
+  section: string
+  column: { index: number }
+  row: { index: number }
+  cell: {
+    styles: {
+      textColor?: [number, number, number] | number[] | string
+      fontStyle?: string
+    }
+  }
+}
+
+function drawHeaderAndFooter(doc: unknown, title: string, subtitle?: string) {
+  const pdf = doc as PDFDocHelper
+  const PW = pdf.internal.pageSize.getWidth()
+  const PH = pdf.internal.pageSize.getHeight()
   const now = new Date()
   const dateStr = now.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
 
   // ── Header ──
-  doc.setFillColor(...C.brand)
-  doc.rect(0, 0, PW, 42, 'F')
-  doc.setFillColor(...C.white)
-  doc.roundedRect(10, 7, 28, 28, 4, 4, 'F')
-  doc.setFont('helvetica','bold')
-  doc.setFontSize(12)
-  doc.setTextColor(...C.brand)
-  doc.text('ASPRA', 24, 24.5, { align:'center' })
-  doc.setFont('helvetica','bold')
-  doc.setFontSize(15)
-  doc.setTextColor(...C.white)
-  doc.text(title, 48, 18)
-  doc.setFont('helvetica','normal')
-  doc.setFontSize(8.5)
-  doc.setTextColor(200,230,210)
-  doc.text('Yayasan Assakinah Sejahtera  ·  Sistem Informasi ASPRA', 48, 26)
-  doc.text(`Dicetak: ${dateStr}, pukul ${now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`, 48, 33)
+  pdf.setFillColor(...C.brand)
+  pdf.rect(0, 0, PW, 42, 'F')
+  pdf.setFillColor(...C.white)
+  pdf.roundedRect(10, 7, 28, 28, 4, 4, 'F')
+  pdf.setFont('helvetica','bold')
+  pdf.setFontSize(12)
+  pdf.setTextColor(...C.brand)
+  pdf.text('ASPRA', 24, 24.5, { align:'center' })
+  pdf.setFont('helvetica','bold')
+  pdf.setFontSize(15)
+  pdf.setTextColor(...C.white)
+  pdf.text(title, 48, 18)
+  pdf.setFont('helvetica','normal')
+  pdf.setFontSize(8.5)
+  pdf.setTextColor(200,230,210)
+  pdf.text('Yayasan Assakinah Sejahtera  ·  Sistem Informasi ASPRA', 48, 26)
+  pdf.text(`Dicetak: ${dateStr}, pukul ${now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`, 48, 33)
 
   if (subtitle) {
-    doc.setFontSize(8)
-    doc.text(subtitle, PW - 15, 33, { align: 'right' })
+    pdf.setFontSize(8)
+    pdf.text(subtitle, PW - 15, 33, { align: 'right' })
   }
 
-  doc.setFillColor(...C.green)
-  doc.rect(0, 42, PW, 2, 'F')
+  pdf.setFillColor(...C.green)
+  pdf.rect(0, 42, PW, 2, 'F')
 
   // ── Footer ──
-  const pages = internal.getNumberOfPages()
+  const pages = pdf.getNumberOfPages()
   for (let p = 1; p <= pages; p++) {
-    doc.setPage(p)
-    doc.setDrawColor(...C.brand); doc.setLineWidth(0.4)
-    doc.line(10, PH-14, PW-10, PH-14)
-    doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(...C.light)
-    doc.text('ASPRA — Sistem Informasi Yayasan Assakinah Sejahtera  |  Dokumen dicetak otomatis', 10, PH-9)
-    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...C.mid)
-    doc.text(`Hal. ${p} / ${pages}`, PW-10, PH-9, { align:'right' })
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(200,210,200)
-    doc.text('KONFIDENSIAL — HANYA UNTUK PENGGUNAAN INTERNAL', PW/2, PH-5, { align:'center' })
+    pdf.setPage(p)
+    pdf.setDrawColor(...C.brand); pdf.setLineWidth(0.4)
+    pdf.line(10, PH-14, PW-10, PH-14)
+    pdf.setFont('helvetica','italic'); pdf.setFontSize(7); pdf.setTextColor(...C.light)
+    pdf.text('ASPRA — Sistem Informasi Yayasan Assakinah Sejahtera  |  Dokumen dicetak otomatis', 10, PH-9)
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...C.mid)
+    pdf.text(`Hal. ${p} / ${pages}`, PW-10, PH-9, { align:'right' })
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); pdf.setTextColor(200,210,200)
+    pdf.text('KONFIDENSIAL — HANYA UNTUK PENGGUNAAN INTERNAL', PW/2, PH-5, { align:'center' })
   }
 }
 
@@ -166,7 +187,7 @@ async function generatePDFSemua(data: PeminjamanRuanganWithRelations[], ruanganN
       7: { halign:'center', cellWidth:22 },
     },
     alternateRowStyles: { fillColor:C.rowAlt },
-    didParseCell(d) {
+    didParseCell(d: AutoTableData) {
       if (d.section === 'body' && d.column.index === 7) {
         const raw = data[d.row.index]?.status ?? 'menunggu'
         d.cell.styles.textColor = STATUS_COLOR[raw] ?? C.dark
@@ -245,7 +266,7 @@ async function generatePDFPerRuangan(data: PeminjamanRuanganWithRelations[]) {
         6: { halign:'center', cellWidth:24 },
       },
       alternateRowStyles: { fillColor:C.rowAlt },
-      didParseCell(d) {
+      didParseCell(d: AutoTableData) {
         if (d.section === 'body' && d.column.index === 6) {
           const raw = group.items[d.row.index]?.status ?? 'menunggu'
           d.cell.styles.textColor = STATUS_COLOR[raw] ?? C.dark
@@ -331,7 +352,7 @@ export function ExportPDFJadwal({ selectedRuanganId, selectedRuanganNama }: Prop
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setOpen(v => !v)}
+        onClick={() => setOpen((v: boolean) => !v)}
         disabled={busy}
         id="btn-export-pdf-jadwal"
       >
@@ -348,7 +369,7 @@ export function ExportPDFJadwal({ selectedRuanganId, selectedRuanganNama }: Prop
             onClick={handleAll}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left"
           >
-            <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
               <CalendarDays className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
@@ -361,7 +382,7 @@ export function ExportPDFJadwal({ selectedRuanganId, selectedRuanganNama }: Prop
             onClick={handlePerRuangan}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left"
           >
-            <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
               <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
@@ -377,12 +398,12 @@ export function ExportPDFJadwal({ selectedRuanganId, selectedRuanganNama }: Prop
                 onClick={handleSelected}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left"
               >
-                <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
                   <CalendarDays className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <p className="font-medium">Ruangan Ini</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[130px]">{selectedRuanganNama}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-32.5">{selectedRuanganNama}</p>
                 </div>
               </button>
             </>
