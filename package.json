@@ -7,7 +7,8 @@
     "dev:webpack": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "demo:sit": "node scripts/sit_visual_demo.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
